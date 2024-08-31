@@ -11,7 +11,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, "windows-latest"]
+<<<<<<< HEAD
         python-version: ["3.11", "3.12"]
+=======
+        python-version: ["3.10", "3.11", "3.12"]
+>>>>>>> e6c0e79 (ci: Add GitHub actions for CI-CD)
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
