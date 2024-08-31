@@ -1,10 +1,11 @@
 [project]
 name = "tidyms2"
 version = "0.1.0"
+authors = [{ name = "Gabriel Riquelme", email = "griquelme.chm@gmail.com" }]
 description = "Tools to process mass spectrometry data."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["numpy>=2.1.0", "pydantic>=2.8.2"]
+dependencies = ["numpy>=2.1.0", "pydantic>=2.8.2", "uuid-utils>=0.9.0"]
 
 [project.optional-dependencies]
 dev = [
@@ -14,6 +15,13 @@ dev = [
     "pytest-cov>=5.0.0",
     "pytest>=8.3.2",
     "ruff>=0.6.3",
+]
+docs = [
+    "autodoc-pydantic>=2.2.0",
+    "pydata-sphinx-theme>=0.15.4",
+    "sphinx-autodoc-typehints>=2.3.0",
+    "sphinx-pyproject>=0.3.0",
+    "sphinx>=8.0.2",
 ]
 
 [build-system]
@@ -39,6 +47,3 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 testpaths = ["src/tests/unit"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "numpy"
