@@ -1,0 +1,44 @@
+[project]
+name = "tidyms2"
+version = "0.1.0"
+description = "Tools to process mass spectrometry data."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=2.1.0", "pydantic>=2.8.2"]
+
+[project.optional-dependencies]
+dev = [
+    "commitizen>=3.29.0",
+    "pre-commit>=3.8.0",
+    "pyright>=1.1.378",
+    "pytest-cov>=5.0.0",
+    "pytest>=8.3.2",
+    "ruff>=0.6.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 119
+lint.select = ["F", "W", "E", "I", "D"]
+lint.ignore = ["D105", "D107", "D203", "D213"]
+exclude = ["docs/"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"src/tidyms2/__init__.py" = ["D"]
+"src/tests/*" = ["D100", "D101", "D102", "D103", "D104"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@abstractmethod",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests/unit"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
