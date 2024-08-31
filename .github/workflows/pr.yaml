@@ -1,0 +1,48 @@
+name: CI on pull request
+
+on: pull_request
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-checks:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, "windows-latest"]
+        python-version: ["3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up runner
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup env
+        id: setup-env
+        run: |
+          pip install uv --root-user-action=ignore && uv pip install --editable .[dev] --system
+
+      - name: Check code quality
+        if: ${{ always() }}
+        run: |
+          ruff check src --output-format=github
+
+      - name: Check code formatting
+        if: ${{ always() }}
+        run: |
+          ruff format src --check
+
+      - name: Static type check
+        if: ${{ always() }}
+        run: |
+          pyright src
+
+      - name: Check tests
+        if: ${{ always() }}
+        run: |
+          pytest src/tests/unit
