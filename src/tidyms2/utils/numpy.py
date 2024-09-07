@@ -14,19 +14,11 @@ from typing_extensions import Annotated
 
 
 def array_to_json_str(arr: NDArray) -> str:
-    """
-    Serialize a numpy array as a JSON string.
+    """Serialize a numpy array as a JSON string.
 
-    Parameters
-    ----------
-    arr : array
-
-    Returns
-    -------
-    str
-        JSON string with the following three fields. `dtype` store the array
-        dtype, `shape` contains the array shape and `base64_bytes` stores
-        the array data in base64 format.
+    :param arr: The numpy array to serialize
+    :return: JSON string with the following three fields. `dtype` store the array dtype, `shape` contains the array
+        shape and `base64_bytes` stores the array data in base64 format.
 
     """
     d = {
@@ -38,16 +30,10 @@ def array_to_json_str(arr: NDArray) -> str:
 
 
 def json_str_to_array(s: str):
-    """
-    Decode a string generated with array_to_json_str into a numpy array.
+    """Decode a string generated with array_to_json_str into a numpy array.
 
-    Parameters
-    ----------
-    s : str
-
-    Returns
-    -------
-    numpy.ndarray
+    :param s: A string serialized numpy array
+    :return: a new numpy instance
 
     """
     d = json.loads(s)
