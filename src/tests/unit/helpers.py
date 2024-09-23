@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from math import isnan, nan
+from functools import cached_property
 from pathlib import Path
 from random import randint, random
 
+from pydantic import computed_field
 from typing_extensions import Self
 
 from tidyms2.core import models, operators
@@ -23,23 +24,26 @@ class ConcreteRoi(Roi):
 
 class ConcreteFeature(AnnotableFeature[ConcreteRoi]):
     data: int
-    custom_descriptor: float = nan
 
-    def _set_custom_descriptor(self):
-        self.custom_descriptor = 100.0
+    @computed_field
+    @cached_property
+    def custom_descriptor(self) -> float:
+        return 100.0
 
-    def _set_area(self):
-        if isnan(self.area):
-            self.area = 100.0 * self.data
+    @computed_field
+    @cached_property
+    def area(self) -> float:
+        return 100.0 * self.data
 
-    def _set_mz(self):
-        # make mz depend on data field to test equal method
-        if isnan(self.mz):
-            self.mz = 100.0 * self.data
+    @computed_field
+    @cached_property
+    def mz(self) -> float:
+        return 100.0 * self.data
 
-    def _set_height(self):
-        if isnan(self.height):
-            self.height = 50.0 * self.data
+    @computed_field
+    @cached_property
+    def height(self) -> float:
+        return 50.0 * self.data
 
     def equal(self, other: ConcreteFeature) -> bool:
         return self.data == other.data
@@ -156,7 +160,7 @@ def create_roi(sample: Sample) -> ConcreteRoi:
 
 def create_feature(roi: ConcreteRoi) -> ConcreteFeature:
     data = randint(0, 10)
-    return ConcreteFeature(roi=roi, data=data, height=float(data))
+    return ConcreteFeature(roi=roi, data=data)
 
 
 # def add_dummy_features(roi_list: list[ConcreteRoi], n: int):
