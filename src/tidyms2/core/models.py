@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from functools import lru_cache
-from math import isnan, nan
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Annotated, Any, Generic, TypeVar
 from uuid import UUID
@@ -108,24 +107,27 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
 
     Data fields
         contain information to represent the feature. e.g. the start and end position of a
-        chromatographic peak.
+        chromatographic peak. These fields are represented as standard pydantic fields.
     Descriptors
         describe feature characteristics. e.g, the peak width or peak area in a chromatographic
-        peak. Descriptors are set in the same way as data fields, but two additional restriction
-        apply. First, the type of a descriptor must be `float` and the default value of the
-        descriptor must be ``nan``. Second, a method called `_set_descriptor_name` must be
-        created for each descriptor, which computes the corresponding descriptor value and
-        stores it in the corresponding instance attribute. As an example:
+        peak. ALL descriptors MUST be floats. These fields are represented as pydantic computed
+        fields. Descriptors MUST be decorated with `pydantic.computed_field`. It is also
+        recommended to use the `functools.cached_property` decorator to cache the descriptor value.
+        As an example:
 
         .. code-block: python
 
-            from math import nan
-            from tidyms.core.models import Feature
+            from functoools import cached_property
+            from pydantic import computed_field
 
             class MyFeature(Feature):
-                custom_descriptor: float = nan
 
-                def _set_custom_descriptor(self):
+                data_field: float = 1.0
+                '''A feature data field.'''
+
+                @computed_field
+                @cached_property
+                def custom_descriptor(self):
                     self.custom_descriptor = 100.0
 
         The mz, area and height descriptors are set as abstract methods and need
@@ -135,8 +137,8 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
     These parameters are managed internally by the library and they MUST never be set directly
     by the user.
 
-    TODO: add link
-    See THIS GUIDE for an example on how to create a new Feature class.
+    Refer to the :ref:`developer guides <developer-guide>` for an example on how to create a new
+    Feature class.
 
     """
 
@@ -146,41 +148,40 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
     annotation: Annotation | None = None
     """Annotation data of the feature."""
 
-    mz: float = nan
-    height: float = nan
-    area: float = nan
-
     # TODO: remove order functions
 
     def __lt__(self, other: Self):
-        return self.get("mz") < other.get("mz")
+        return self.mz < other.mz
 
     def __le__(self, other: Self):
-        return self.get("mz") <= other.get("mz")
+        return self.mz <= other.mz
 
     def __gt__(self, other: Self):
-        return self.get("mz") > other.get("mz")
+        return self.mz > other.mz
 
     def __ge__(self, other: Self):
-        return self.get("mz") >= other.get("mz")
+        return self.mz >= other.mz
 
     def __hash__(self) -> int:
         assert self.annotation is not None
         return self.annotation.id.__hash__()
 
+    @cached_property
     @abstractmethod
-    def _set_mz(self):
-        """Get the feature m/z."""
+    def mz(self) -> float:
+        """The feature m/z."""
         ...
 
+    @cached_property
     @abstractmethod
-    def _set_area(self):
-        """Get the feature area."""
+    def area(self) -> float:
+        """The feature area."""
         ...
 
+    @cached_property
     @abstractmethod
-    def _set_height(self):
-        """Get the feature height."""
+    def height(self) -> float:
+        """The feature height."""
         ...
 
     def has_descriptors_in_range(self, **bounds: tuple[float, float]) -> bool:
@@ -239,11 +240,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
 
         """
         try:
-            val = getattr(self, descriptor)
-            if isnan(val):
-                getattr(self, f"_set_{descriptor}")()
-                val = getattr(self, descriptor)
-            return val
+            return getattr(self, descriptor)
         except AttributeError as e:
             msg = f"{descriptor} is not a valid descriptor."
             raise ValueError(msg) from e
@@ -256,8 +253,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
         :return: the descriptor names.
 
         """
-        # trim _get_ from function name
-        return {x[5:] for x in dir(cls) if x.startswith("_set_")}
+        return set(cls.model_computed_fields)
 
     @pydantic.model_validator(mode="after")
     def _add_annotation(self) -> Self:

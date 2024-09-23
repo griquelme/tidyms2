@@ -77,6 +77,9 @@ class TestFeature:
         all_attr = feature.__dict__
         assert all(x in all_attr for x in descriptors)
         assert all(isinstance(x, float) for x in descriptors.values())
+        assert feature.mz == descriptors["mz"]
+        assert feature.height == descriptors["height"]
+        assert feature.area == descriptors["area"]
 
     def test_is_feature_descriptor_in_valid_range_valid_range(self, feature):
         name = "height"
