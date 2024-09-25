@@ -109,6 +109,14 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
         """Fetch fill values for missing data matrix entries."""
         return self._current.fetch_fill_values(copy=True)
 
+    def get_process_status(self) -> AssayProcessStatus:
+        """Retrieve the current process status."""
+        return self._current.status.model_copy(deep=True)
+
+    def set_process_status(self, status: AssayProcessStatus) -> None:
+        """Set the assay process status."""
+        self._current.status = status
+
     def fetch_sample_data(self, sample_id: str) -> OnMemorySampleStorage[RoiType, FeatureType]:
         """Fetch Samples from the assay using their ids."""
         if not self.has_sample(sample_id):
