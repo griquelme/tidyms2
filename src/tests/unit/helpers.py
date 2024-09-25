@@ -12,6 +12,7 @@ from typing_extensions import Self
 from tidyms2.core import models, operators
 from tidyms2.core.enums import MSInstrument, Polarity, SeparationMode
 from tidyms2.core.models import AnnotableFeature, IsotopicEnvelope, Roi, Sample
+from tidyms2.core.registry import operator_registry
 
 
 class ConcreteRoi(Roi):
@@ -59,6 +60,7 @@ class ConcreteFeature(AnnotableFeature[ConcreteRoi]):
         return IsotopicEnvelope(mz=mz, p=p)
 
 
+@operator_registry.register
 class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
     n_roi: int = 3
     """The number of dummy ROI to extract."""
@@ -81,6 +83,7 @@ class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
         return cls()
 
 
+@operator_registry.register
 class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]):
     max_length: int = 2
     """Crop ROI length to max length. ROIs with length greater than this value are deleted."""
@@ -98,6 +101,7 @@ class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]
         return cls()
 
 
+@operator_registry.register
 class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeature]):
     n_features: int = 2
     """The number of features to extract from each ROI."""
@@ -112,6 +116,7 @@ class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeat
         return cls()
 
 
+@operator_registry.register
 class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, ConcreteFeature]):
     feature_value: int = 5
     """The value to set in feature data."""
@@ -129,21 +134,51 @@ class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, Concrete
         return cls()
 
 
-# @processors.ProcessorRegistry.register
-# class DummyFeatureTransformer(processors.FeatureTransformer):
-#     param1: float = 10.0
-#     param2: bool = False
+@operator_registry.register
+class DummyAnnotationPatcher(operators.AnnotationPatcher):
+    """Set annotation group to a fixed values in all features."""
 
-#     def _transform_feature(self, feature: Feature):
-#         pass
+    group: int = 0
 
-#     def get_default_parameters(
-#         self,
-#         instrument: c.MSInstrument = c.MSInstrument.QTOF,
-#         separation: c.SeparationMode = c.SeparationMode.UPLC,
-#         polarity: c.Polarity = c.Polarity.POSITIVE,
-#     ):
-#         return dict()
+    def compute_patches(self, data: operators.AssayStorage) -> list[models.AnnotationPatch]:
+        annotations = data.fetch_annotations()
+        return [models.AnnotationPatch(id=x.id, field="group", value=0) for x in annotations]
+
+    @classmethod
+    def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity) -> Self:
+        return cls()
+
+    def pre_apply(self):
+        """Test pre apply functionality."""
+        pass
+
+    def post_apply(self):
+        """Test post apply functionality."""
+        pass
+
+
+@operator_registry.register
+class DummyDescriptorPatcher(operators.DescriptorPatcher):
+    """Set descriptor to a fixed value in all features."""
+
+    patch: float = 500.0
+    descriptor: str = "custom_descriptor"
+
+    def compute_patches(self, data: operators.AssayStorage) -> list[models.DescriptorPatch]:
+        annotations = data.fetch_annotations()
+        return [models.DescriptorPatch(id=x.id, descriptor=self.descriptor, value=self.patch) for x in annotations]
+
+    @classmethod
+    def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity) -> Self:
+        return cls()
+
+    def pre_apply(self):
+        """Test pre apply functionality."""
+        pass
+
+    def post_apply(self):
+        """Test post apply functionality."""
+        pass
 
 
 def create_sample(path: Path, suffix: int, group: str = "") -> models.Sample:
@@ -161,57 +196,3 @@ def create_roi(sample: Sample) -> ConcreteRoi:
 def create_feature(roi: ConcreteRoi) -> ConcreteFeature:
     data = randint(0, 10)
     return ConcreteFeature(roi=roi, data=data)
-
-
-# def add_dummy_features(roi_list: list[ConcreteRoi], n: int):
-#     label_counter = 0
-#     for roi in roi_list:
-#         for _ in range(n):
-#             annotation = models.Annotation(group=label_counter)
-#             ft = create_feature(roi, annotation)
-#             roi.add_feature(ft)
-#             label_counter += 1
-
-
-# def get_feature_list(roi_list: list[ConcreteRoi]) -> list[ConcreteFeature]:
-#     feature_list = list()
-#     for roi in roi_list:
-#         feature_list.extend(roi.features)
-#     return feature_list
-
-
-# def create_dummy_sample_data(
-#     path: Path, suffix: int, group: str = "", with_roi: bool = False, with_feature: bool = False
-# ) -> SampleData:
-#     """
-#     Create a dummy sample data instance.
-
-#     Parameters
-#     ----------
-#     path : Path
-#         dummy path pointing to raw data.
-#     suffix : int
-#         numeric suffix appended to sample id.
-#     group : str, optional
-#         The group where the sample belongs to., by default ""
-#     with_roi : bool, optional
-#         If ``True``, adds dummy ROIs to sample, by default False
-#     with_feature : bool, optional
-#         If ``True`` add dummy features to ROI, by default False
-
-#     Returns
-#     -------
-#     SampleData
-
-#     """
-#     sample = create_dummy_sample(path, suffix, group)
-
-#     if with_roi:
-#         roi_list = [create_dummy_roi() for _ in range(5)]
-#     else:
-#         roi_list = list()
-
-#     if with_roi and with_feature:
-#         add_dummy_features(roi_list, 5)
-
-#     return SampleData(sample=sample, roi=roi_list)

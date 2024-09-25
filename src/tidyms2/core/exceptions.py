@@ -33,6 +33,10 @@ class ProcessStatusError(ValueError):
     """Exception raised when an action cannot be performed on sample data due to incorrect processing status."""
 
 
+class RegistryError(ValueError):
+    """Exception raised when an entry is not found in a registry."""
+
+
 class SampleNotFound(ValueError):
     """Exception raised when a sample is not found in assay/matrix storage."""
 
