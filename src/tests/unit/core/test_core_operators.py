@@ -2,32 +2,39 @@ import pydantic
 import pytest
 
 from tidyms2.core.dataflow import SampleProcessStatus
-from tidyms2.core.exceptions import PipelineConfigurationError, ProcessStatusError
+from tidyms2.core.exceptions import PipelineConfigurationError, ProcessStatusError, RepeatedIdError
 from tidyms2.core.operators import Pipeline
-from tidyms2.storage.memory import OnMemorySampleStorage
+from tidyms2.storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
 
 from .. import helpers
 from ..helpers import ConcreteFeature, ConcreteRoi
 
 
 @pytest.fixture
-def storage(tmp_path) -> OnMemorySampleStorage[ConcreteRoi, ConcreteFeature]:
+def sample_storage(tmp_path) -> OnMemorySampleStorage[ConcreteRoi, ConcreteFeature]:
     sample = helpers.create_sample(tmp_path, 1)
     return OnMemorySampleStorage(sample, ConcreteRoi, ConcreteFeature)
 
 
 @pytest.fixture
-def storage_with_rois(storage):
+def sample_storage_with_rois(sample_storage):
     roi_extractor = helpers.DummyRoiExtractor()
-    roi_extractor.apply(storage)
-    return storage
+    roi_extractor.apply(sample_storage)
+    return sample_storage
 
 
 @pytest.fixture
-def storage_with_features(storage_with_rois):
+def sample_storage_with_features(sample_storage_with_rois):
     feature_extractor = helpers.DummyFeatureExtractor()
-    feature_extractor.apply(storage_with_rois)
-    return storage_with_rois
+    feature_extractor.apply(sample_storage_with_rois)
+    return sample_storage_with_rois
+
+
+@pytest.fixture
+def assay_storage(sample_storage_with_features):
+    assay = OnMemoryAssayStorage("assay", helpers.ConcreteRoi, helpers.ConcreteFeature)
+    assay.add_sample_data(sample_storage_with_features)
+    return assay
 
 
 class TestRoiExtractor:
@@ -45,12 +52,12 @@ class TestRoiExtractor:
         op.update_status(status_in)
         assert status_in.roi_extracted
 
-    def test_apply(self, storage, op):
-        assert not storage.list_rois()
-        op.apply(storage)
+    def test_apply(self, sample_storage, op):
+        assert not sample_storage.list_rois()
+        op.apply(sample_storage)
 
-        assert len(storage.list_rois()) == op.n_roi
-        assert storage.get_status().roi_extracted
+        assert len(sample_storage.list_rois()) == op.n_roi
+        assert sample_storage.get_status().roi_extracted
 
 
 class TestRoiTransformer:
@@ -67,11 +74,11 @@ class TestRoiTransformer:
         status = SampleProcessStatus(roi_extracted=True)
         op.check_status(status)
 
-    def test_apply(self, storage_with_rois, op):
-        op.apply(storage_with_rois)
+    def test_apply(self, sample_storage_with_rois, op):
+        op.apply(sample_storage_with_rois)
 
-        assert all(x.data == op.max_length for x in storage_with_rois.list_rois())
-        assert storage_with_rois.get_status().roi_extracted
+        assert all(x.data == op.max_length for x in sample_storage_with_rois.list_rois())
+        assert sample_storage_with_rois.get_status().roi_extracted
 
 
 class TestFeatureExtractor:
@@ -88,47 +95,47 @@ class TestFeatureExtractor:
         status = SampleProcessStatus(roi_extracted=True)
         op.check_status(status)
 
-    def test_apply(self, storage_with_rois, op):
-        op.apply(storage_with_rois)
+    def test_apply(self, sample_storage_with_rois, op):
+        op.apply(sample_storage_with_rois)
 
-        rois = storage_with_rois.list_rois()
+        rois = sample_storage_with_rois.list_rois()
         assert rois
         for roi in rois:
-            features = storage_with_rois.list_features(roi_id=roi.id)
+            features = sample_storage_with_rois.list_features(roi_id=roi.id)
             assert len(features) == op.n_features
 
-        assert storage_with_rois.get_status().roi_extracted
-        assert storage_with_rois.get_status().feature_extracted
+        assert sample_storage_with_rois.get_status().roi_extracted
+        assert sample_storage_with_rois.get_status().feature_extracted
 
-    def test_apply_with_filter_remove_all_features(self, storage_with_rois, op):
+    def test_apply_with_filter_remove_all_features(self, sample_storage_with_rois, op):
         op.bounds = {"height": (1000000.0, 2000000.0)}
-        op.apply(storage_with_rois)
+        op.apply(sample_storage_with_rois)
 
-        assert storage_with_rois.list_rois()
-        assert not storage_with_rois.list_features()
+        assert sample_storage_with_rois.list_rois()
+        assert not sample_storage_with_rois.list_features()
 
-        assert storage_with_rois.get_status().roi_extracted
-        assert storage_with_rois.get_status().feature_extracted
+        assert sample_storage_with_rois.get_status().roi_extracted
+        assert sample_storage_with_rois.get_status().feature_extracted
 
-    def test_apply_with_filter_fill_lower_bound_with_inf(self, storage_with_rois, op):
+    def test_apply_with_filter_fill_lower_bound_with_inf(self, sample_storage_with_rois, op):
         op.bounds = {"height": (None, 2000000.0)}
-        op.apply(storage_with_rois)
+        op.apply(sample_storage_with_rois)
 
-        assert storage_with_rois.list_rois()
-        assert storage_with_rois.list_features()
+        assert sample_storage_with_rois.list_rois()
+        assert sample_storage_with_rois.list_features()
 
-        assert storage_with_rois.get_status().roi_extracted
-        assert storage_with_rois.get_status().feature_extracted
+        assert sample_storage_with_rois.get_status().roi_extracted
+        assert sample_storage_with_rois.get_status().feature_extracted
 
-    def test_apply_with_filter_fill_upper_bound_with_inf(self, storage_with_rois, op):
+    def test_apply_with_filter_fill_upper_bound_with_inf(self, sample_storage_with_rois, op):
         op.bounds = {"height": (0.0, None)}
-        op.apply(storage_with_rois)
+        op.apply(sample_storage_with_rois)
 
-        assert storage_with_rois.list_rois()
-        assert storage_with_rois.list_features()
+        assert sample_storage_with_rois.list_rois()
+        assert sample_storage_with_rois.list_features()
 
-        assert storage_with_rois.get_status().roi_extracted
-        assert storage_with_rois.get_status().feature_extracted
+        assert sample_storage_with_rois.get_status().roi_extracted
+        assert sample_storage_with_rois.get_status().feature_extracted
 
 
 class TestFeatureTransformer:
@@ -145,160 +152,172 @@ class TestFeatureTransformer:
         status = SampleProcessStatus(roi_extracted=True, feature_extracted=True)
         op.check_status(status)
 
-    def test_apply(self, storage_with_features, op):
-        op.apply(storage_with_features)
+    def test_apply(self, sample_storage_with_features, op):
+        op.apply(sample_storage_with_features)
 
-        assert all(x.data == op.feature_value for x in storage_with_features.list_features())
-        assert storage_with_features.get_status().roi_extracted
+        assert all(x.data == op.feature_value for x in sample_storage_with_features.list_features())
+        assert sample_storage_with_features.get_status().roi_extracted
+
+
+class TestAnnotationPatcher:
+    @pytest.fixture
+    def op(self):
+        return helpers.DummyAnnotationPatcher(id="dummy-id")
+
+    def test_apply_ok(self, op, assay_storage: OnMemoryAssayStorage):
+        annotations_before = assay_storage.fetch_annotations()
+        op.apply(assay_storage)
+        annotations_after = assay_storage.fetch_annotations()
+        assert annotations_before != annotations_after
+        assert all(x.group == op.group for x in annotations_after)
+
+
+class TestDescriptorPatcher:
+    @pytest.fixture
+    def op(self):
+        return helpers.DummyDescriptorPatcher(id="dummy-id")
+
+    def test_apply_ok(self, op, assay_storage: OnMemoryAssayStorage):
+        descriptor = "custom_descriptor"
+        descriptors_before = assay_storage.fetch_descriptors(descriptors=[descriptor])
+        op.apply(assay_storage)
+        descriptors_after = assay_storage.fetch_descriptors(descriptors=[descriptor])
+        assert descriptors_before != descriptors_after
+        assert all(x == op.patch for x in descriptors_after[descriptor])
 
 
 class TestPipeline:
-    def test_empty_pipeline_raises_error(self):
-        with pytest.raises(pydantic.ValidationError):
-            Pipeline(id="pipeline", operators=[])
+    @pytest.fixture
+    def pipe(self):
+        return Pipeline(id="test-pipeline")
 
-    def test_validate_with_single_valid_operator(self):
-        pipe = Pipeline(id="pipeline", operators=[helpers.DummyRoiExtractor()])
-        pipe.validate_pipeline()
+    def test_add_sample_operator_to_empty_pipeline(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor())
 
-    def test_validate_with_invalid_operator_raises_error(self):
+    def test_add_assay_operator_to_empty_pipeline(self, pipe):
+        pipe.add_operator(helpers.DummyAnnotationPatcher())
+
+    def test_add_sample_operator_with_repeated_raises_error(self, pipe):
+        op = helpers.DummyRoiExtractor(id="dummy-id")
+        pipe.add_operator(op)
+        with pytest.raises(RepeatedIdError):
+            pipe.add_operator(op)
+
+    def test_add_sample_operator_to_pipeline_with_assay_operator_raises_error(self, pipe):
+        assay_op = helpers.DummyDescriptorPatcher(id="dummy-descriptor-patcher-id")
+        pipe.add_operator(assay_op)
         with pytest.raises(PipelineConfigurationError):
-            pipe = Pipeline(id="pipeline", operators=[helpers.DummyRoiTransformer()])
-            pipe.validate_pipeline()
+            sample_op = helpers.DummyRoiExtractor(id="dummy-roi-extractor-id")
+            pipe.add_operator(sample_op)
 
-    def test_validate_with_multiple_operators_in_valid_order(self):
-        pipe = Pipeline(
-            id="test-pipeline",
-            operators=[
-                helpers.DummyRoiExtractor(id="op1"),
-                helpers.DummyRoiTransformer(id="op2"),
-                helpers.DummyFeatureExtractor(id="op3"),
-                helpers.DummyFeatureTransformer(id="op4"),
-            ],
-        )
-        pipe.validate_pipeline()
-
-    def test_validate_with_multiple_operators_in_invalid_order_raises_error(self):
+    def test_add_assay_operator_to_pipeline_with_sample_operator_raises_error(self, pipe):
+        sample_op = helpers.DummyRoiExtractor(id="dummy-roi-extractor-id")
+        pipe.add_operator(sample_op)
         with pytest.raises(PipelineConfigurationError):
-            pipe = Pipeline(
-                id="pipeline",
-                operators=[
-                    helpers.DummyRoiExtractor(id="op1"),
-                    helpers.DummyFeatureTransformer(id="op2"),
-                    helpers.DummyFeatureExtractor(id="op3"),
-                ],
-            )
-            pipe.validate_pipeline()
+            assay_op = helpers.DummyDescriptorPatcher(id="dummy-descriptor-patcher-id")
+            pipe.add_operator(assay_op)
 
+    def test_add_empty_pipeline_raises_error(self, pipe):
+        sub_pipe = Pipeline(id="empty-pipe")
+        with pytest.raises(PipelineConfigurationError):
+            pipe.add_operator(sub_pipe)
 
-# class TestProcessingPipeline:
-#     def test_validate_processors_with_repeated_names_raises_error(
-#         self,
-#         roi_extractor: utils.DummyRoiExtractor,
-#         feature_extractor: utils.DummyFeatureExtractor,
-#     ):
-#         feature_extractor.id = roi_extractor.id
-#         id_ = "my-pipeline"
-#         processing_steps = (roi_extractor, feature_extractor)
-#         with pytest.raises(pydantic.ValidationError):
-#             processors.ProcessingPipeline(id=id_, processors=processing_steps)
+    def test_add_pipeline_with_assay_operators_to_pipeline_with_sample_operator_raises_error(self, pipe):
+        sample_op = helpers.DummyRoiExtractor(id="dummy-roi-extractor-id")
+        pipe.add_operator(sample_op)
 
-#     def test_validate_without_roi_extractor_in_first_step_raises_error(
-#         self,
-#         roi_transformer: utils.DummyRoiTransformer,
-#         feature_extractor: utils.DummyFeatureExtractor,
-#         feature_transformer: utils.DummyFeatureTransformer,
-#     ):
-#         id_ = "my-pipeline"
-#         steps = (roi_transformer, feature_extractor, feature_transformer)
-#         with pytest.raises(pydantic.ValidationError):
-#             processors.ProcessingPipeline(id=id_, processors=steps)
+        assay_op = helpers.DummyDescriptorPatcher(id="dummy-descriptor-patcher-id")
+        assay_pipe = Pipeline(id="assay-pipe")
+        assay_pipe.add_operator(assay_op)
+        with pytest.raises(PipelineConfigurationError):
+            pipe.add_operator(assay_pipe)
 
-#     def test_validate_feature_transformer_without_previous_feature_extractor_raises_error(
-#         self,
-#         roi_extractor: utils.DummyRoiExtractor,
-#         roi_transformer: utils.DummyRoiTransformer,
-#         feature_transformer: utils.DummyFeatureTransformer,
-#     ):
-#         id_ = "my-pipeline"
-#         steps = (roi_extractor, roi_transformer, feature_transformer)
+    def test_validate_dataflow_on_sample_ok_if_first_operator_is_roi_extractor(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor())
+        pipe.validate_dataflow()
 
-#         with pytest.raises(pydantic.ValidationError):
-#             processors.ProcessingPipeline(id=id_, processors=steps)
+    def test_validate_dataflow_on_sample_pipeline_raises_error_if_first_operator_is_not_roi_extractor(self, pipe):
+        with pytest.raises(PipelineConfigurationError):
+            pipe.add_operator(helpers.DummyRoiTransformer())
+            pipe.validate_dataflow()
 
-#     def test_validate_feature_transformer_with_previous_feature_extractor_ok(
-#         self,
-#         roi_extractor: utils.DummyRoiExtractor,
-#         roi_transformer: utils.DummyRoiTransformer,
-#         feature_extractor: utils.DummyFeatureExtractor,
-#         feature_transformer: utils.DummyFeatureTransformer,
-#     ):
-#         id_ = "my-pipeline"
-#         steps = (roi_extractor, roi_transformer, feature_extractor, feature_transformer)
-#         processors.ProcessingPipeline(id=id_, processors=steps)
-#         assert True
+    def test_validate_dataflow_ok_if_multiple_operators_are_in_valid_order(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+        pipe.validate_dataflow()
 
-#     def test_get_processor(self, pipeline: processors.ProcessingPipeline):
-#         processor_id = "feature extractor"
-#         processor = pipeline.get_processor(processor_id)
-#         assert isinstance(processor, utils.DummyFeatureExtractor)
+    def test_validate_dataflow_raise_error_if_multiple_operators_are_not_in_valid_order(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op4"))
+        with pytest.raises(PipelineConfigurationError):
+            pipe.validate_dataflow()
 
-#     def test_get_processor_invalid_id_raises_error(self, pipeline: processors.ProcessingPipeline):
-#         processor_id = "invalid processor id"
-#         with pytest.raises(exceptions.ProcessorNotFound):
-#             pipeline.get_processor(processor_id)
+    def test_validate_dataflow_with_nested_pipeline_as_first_element(self, pipe):
+        sub_pipe = Pipeline("sub-pipeline")
+        sub_pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        sub_pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        sub_pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(sub_pipe)
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+        pipe.validate_dataflow()
 
-#     def test_to_dict(self, pipeline: processors.ProcessingPipeline):
-#         d = pipeline.to_dict()
-#         pipeline_from_dict = processors.ProcessingPipeline.from_dict(d)
-#         assert pipeline_from_dict == pipeline
+    def test_validate_dataflow_nested_pipeline(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        sub_pipe = Pipeline("sub-pipeline")
+        sub_pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        sub_pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        sub_pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+        pipe.add_operator(sub_pipe)
+        pipe.validate_dataflow()
 
+    def test_pipe_serialize_deserialize_flat_pipeline(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
 
-# def test_ProcessingPipeline_get_parameters(pipeline: assay.ProcessingPipeline):
-#     for name, parameters in pipeline.get_parameters():
-#         processor = pipeline.get_processor(name)
-#         assert parameters == processor.get_parameters()
+        pipe_serialized_deserialized = Pipeline.deserialize(pipe.serialize())
 
+        assert pipe == pipe_serialized_deserialized
 
-# def test_ProcessingPipeline_set_parameters(pipeline: assay.ProcessingPipeline):
-#     new_parameters = {
-#         "roi extractor": {"param1": 25, "param2": "new-value"},
-#         "feature extractor": {
-#             "param1": 15,
-#             "param2": "new-value",
-#             "filters": {"height": (10.0, None)},
-#         },
-#     }
-#     pipeline.set_parameters(new_parameters)
+    def test_pipe_serialize_deserialize_nested_pipeline(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        sub_pipe = Pipeline(id="sub-pipe")
+        sub_pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        sub_pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        sub_pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+        pipe.add_operator(sub_pipe)
 
-#     for processor in pipeline.processors:
-#         assert new_parameters[processor.name] == processor.get_parameters()
+        pipe_serialized_deserialized = Pipeline.deserialize(pipe.serialize())
 
+        assert pipe == pipe_serialized_deserialized
 
-# def test_ProcessingPipeline_set_default_parameters():
-#     processing_steps = [
-#         ("ROI extractor", DummyRoiExtractor()),
-#         ("Feature extractor", DummyFeatureExtractor()),
-#     ]
-#     pipeline = assay.ProcessingPipeline(processing_steps)
-#     instrument = "qtof"
-#     separation = "uplc"
-#     pipeline.set_default_parameters(instrument, separation)
-#     test_defaults = pipeline.get_parameters()
+    def test_deserialize_dict_without_id_raises_error(self):
+        d = dict()
+        with pytest.raises(ValueError):
+            Pipeline.deserialize(d)
 
-#     expected_defaults = list()
-#     for name, processor in pipeline.processors:
-#         processor.set_default_parameters(instrument, separation)
-#         params = processor.get_parameters()
-#         expected_defaults.append((name, params))
-#     assert expected_defaults == test_defaults
+    def test_deserialize_dict_without_operators_raises_error(self):
+        d = {"id": "pipeline-id"}
+        with pytest.raises(ValueError):
+            Pipeline.deserialize(d)
 
+    def test_deserialize_dict_with_invalid_operator_list_raises_error(self):
+        d = {"id": "pipeline-id", "operators": [1]}
+        with pytest.raises(ValueError):
+            Pipeline.deserialize(d)
 
-# def test_ProcessingPipeline_process():
-#     processing_steps = [
-#         ("ROI extractor", DummyRoiExtractor()),
-#         ("Feature extractor", DummyFeatureExtractor()),
-#     ]
-#     pipeline = assay.ProcessingPipeline(processing_steps)
-#     sample = create_dummy_sample_data()
-#     pipeline.process(sample)
+    def test_apply_flat_pipeline(self, pipe, sample_storage):
+        assert not sample_storage.get_n_rois()
+        assert not sample_storage.get_n_features()
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(helpers.DummyRoiTransformer(id="op2", max_length=10))
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+        pipe.apply(sample_storage)
+        assert sample_storage.get_n_rois()
+        assert sample_storage.get_n_features()
