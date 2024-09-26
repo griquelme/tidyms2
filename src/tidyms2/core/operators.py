@@ -11,7 +11,7 @@ import pydantic
 from .dataflow import AssayProcessStatus, ProcessType, SampleProcessStatus, check_process_status, update_process_status
 from .enums import MSInstrument, OperatorType, Polarity, SeparationMode
 from .exceptions import PipelineConfigurationError, ProcessStatusError, RepeatedIdError
-from .models import AnnotationPatch, DescriptorPatch, FeatureType, RoiType, Sample
+from .models import AnnotationPatch, DescriptorPatch, FeatureType, FillValue, RoiType, Sample
 from .registry import operator_registry
 from .storage import AssayStorage, SampleStorage
 
@@ -270,6 +270,32 @@ class DescriptorPatcher(AssayOperator):
 
     @abstractmethod
     def compute_patches(self, data: AssayStorage) -> list[DescriptorPatch]:
+        """Compute feature descriptor patches."""
+        ...
+
+
+class MissingImputer(AssayOperator):
+    """Add values that will be used as fill in missing data matrix entries.
+
+    Must Implement the `add_fill_values` method, which takes an assay storage and returns
+    a list of fill values.
+
+    """
+
+    def get_expected_status_in(self) -> AssayProcessStatus:
+        """Get expected status of input data."""
+        return AssayProcessStatus(feature_matched=True)
+
+    def get_expected_status_out(self) -> AssayProcessStatus:
+        """Get status of output data."""
+        return AssayProcessStatus(missing_imputed=True)
+
+    def _apply_operator(self, data: AssayStorage) -> None:
+        fill_values = self.add_fill_values(data)
+        data.add_fill_values(*fill_values)
+
+    @abstractmethod
+    def add_fill_values(self, data: AssayStorage) -> list[FillValue]:
         """Compute feature descriptor patches."""
         ...
 
