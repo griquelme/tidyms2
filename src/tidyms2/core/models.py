@@ -40,8 +40,8 @@ class Roi(TidyMSBaseModel):
     The field contains a unique identifier for the ROI and is managed internally by
     the library. It MUST not be set directly by the user.
 
-    TODO: add link
-    See THIS GUIDE for an example on how to create a new Roi class.
+    Refer to the :ref:`developer guides <developer-guide>` for an example on how to create a new
+    ROI class.
 
     """
 
