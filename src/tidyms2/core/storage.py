@@ -191,6 +191,10 @@ class AssayStorage(Protocol, Generic[RoiType, FeatureType]):
         """Fetch sample metadata from a sample using its id."""
         ...
 
+    def fetch_sample_data(self, sample_id: str) -> SampleStorage[RoiType, FeatureType]:
+        """Fetch Samples from the assay using their ids."""
+        ...
+
     def get_n_features(self) -> int:
         """Get the total number of features in the assay."""
         ...
