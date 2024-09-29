@@ -42,7 +42,11 @@ Operators
         RoiExtractor,
         RoiTransformer,
         FeatureExtractor,
-        FeatureTransformer
+        FeatureTransformer,
+        AnnotationPatcher,
+        DescriptorPatcher,
+        MissingImputer,
+
    :show-inheritance:
    :exclude-members: model_computed_fields, model_config, model_fields
 
