@@ -300,9 +300,20 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
         self.roi_type = roi_type
         self.feature_type = feature_type
         self._sample = sample.model_copy()
-        latest = OnMemorySampleStorageSnapshot(sample, LATEST, SampleProcessStatus(), roi_type, feature_type)
-        self._snapshots = [latest]
-        self._current = latest
+        self._snapshots = list()
+        self._current: None | OnMemorySampleStorageSnapshot = None
+
+    def _add_snapshot(self, snapshot: OnMemorySampleStorageSnapshot[RoiType, FeatureType]):
+        self._snapshots.append(snapshot)
+
+    def _get_current_snapshot(self) -> OnMemorySampleStorageSnapshot[RoiType, FeatureType]:
+        # create a snapshot if it does not exist
+        if self._current is None:
+            state = SampleProcessStatus()
+            latest = OnMemorySampleStorageSnapshot(self._sample, LATEST, state, self.roi_type, self.feature_type)
+            self._current = latest
+            self._snapshots.append(latest)
+        return self._current
 
     def add_features(self, *features: FeatureType) -> None:
         """Add features to the sample storage.
@@ -313,7 +324,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         """
         self._check_latest_snapshot()
-        self._current.add_features(*features)
+        self._get_current_snapshot().add_features(*features)
 
     def add_rois(self, *rois: RoiType) -> None:
         """Add ROIs to the sample storage.
@@ -323,7 +334,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         """
         self._check_latest_snapshot()
-        self._current.add_rois(*rois)
+        self._get_current_snapshot().add_rois(*rois)
 
     def create_snapshot(self, snapshot_id: str) -> None:
         """Create a new sample data snapshot.
@@ -342,7 +353,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         self._snapshots[-1].id = snapshot_id
 
-        latest = self._current.copy(LATEST, set_new_ids=True)
+        latest = self._get_current_snapshot().copy(LATEST, set_new_ids=True)
 
         self._snapshots.append(latest)
         self._current = latest
@@ -354,7 +365,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         """
         self._check_latest_snapshot()
-        self._current.delete_features(*feature_ids)
+        self._get_current_snapshot().delete_features(*feature_ids)
 
     def delete_rois(self, *roi_ids: UUID) -> None:
         """Delete ROIs using their ids.
@@ -363,7 +374,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         """
         self._check_latest_snapshot()
-        self._current.delete_rois(*roi_ids)
+        self._get_current_snapshot().delete_rois(*roi_ids)
 
     def get_feature(self, feature_id: UUID) -> FeatureType:
         """Retrieve a feature by id.
@@ -371,15 +382,15 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
         :raises FeatureNotFoundError: if the provided `feature_id` is not in the storage
 
         """
-        return self._current.get_feature(feature_id)
+        return self._get_current_snapshot().get_feature(feature_id)
 
     def get_n_features(self) -> int:
         """Get the total number of features in the storage."""
-        return self._current.get_n_features()
+        return self._get_current_snapshot().get_n_features()
 
     def get_n_rois(self) -> int:
         """Get the total number of ROIs in the storage."""
-        return self._current.get_n_rois()
+        return self._get_current_snapshot().get_n_rois()
 
     def get_roi(self, roi_id: UUID) -> RoiType:
         """Retrieve a ROI by id.
@@ -387,7 +398,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
         :raises RoiNotFoundError: if the provided `roi_id` is not in the storage
 
         """
-        return self._current.get_roi(roi_id)
+        return self._get_current_snapshot().get_roi(roi_id)
 
     def get_sample(self) -> Sample:
         """Retrieve the storage sample."""
@@ -395,19 +406,19 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
     def get_snapshot_id(self) -> str:
         """Get the current snapshot id."""
-        return self._current.id
+        return self._get_current_snapshot().id
 
     def get_status(self) -> SampleProcessStatus:
         """Get the current process status."""
-        return self._current.status
+        return self._get_current_snapshot().status
 
     def has_feature(self, feature_id: UUID) -> bool:
         """Check the existence of a feature using its id."""
-        return self._current.has_feature(feature_id)
+        return self._get_current_snapshot().has_feature(feature_id)
 
     def has_roi(self, roi_id: UUID) -> bool:
         """Check the existence of a ROI with the specified id."""
-        return self._current.has_roi(roi_id)
+        return self._get_current_snapshot().has_roi(roi_id)
 
     def list_features(self, roi_id: UUID | None = None) -> list[FeatureType]:
         """List stored features.
@@ -416,11 +427,11 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
         :raises RoiNotFoundError: if the provided `roi_id` is not in the storage
 
         """
-        return self._current.list_features(roi_id)
+        return self._get_current_snapshot().list_features(roi_id)
 
     def list_rois(self) -> list[RoiType]:
         """List all stored ROIs."""
-        return self._current.list_rois()
+        return self._get_current_snapshot().list_rois()
 
     def list_snapshots(self) -> list[str]:
         """List all snapshots."""
@@ -446,16 +457,17 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
         if reset:
             self._snapshots = self._snapshots[:snapshot_index]
-            self._current.id = LATEST
+            self._get_current_snapshot().id = LATEST
 
     def set_status(self, status: SampleProcessStatus) -> None:
         """Set the current process status."""
         self._check_latest_snapshot()
-        self._current.status = status
+        self._get_current_snapshot().status = status
 
     def _check_latest_snapshot(self):
-        if self._current.id != LATEST:
-            msg = f"Only latest snapshot can be modified. Cannot change the state of snapshot {self._current.id}"
+        id_ = self._get_current_snapshot().id
+        if id_ != LATEST:
+            msg = f"Only latest snapshot can be modified. Cannot change the state of snapshot {id_}"
             raise exceptions.SnapshotError(msg)
 
     @classmethod
@@ -465,18 +477,57 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
         """Create a new instance using the provided sample storage."""
         sample = sample_storage.get_sample()
         copied = OnMemorySampleStorage(sample, sample_storage.roi_type, sample_storage.feature_type)
-        copied._snapshots = list()
 
         current_snapshot_id = sample_storage.get_snapshot_id()
 
         for snapshot_id in sample_storage.list_snapshots():
             sample_storage.set_snapshot(snapshot_id)
             snapshot = OnMemorySampleStorageSnapshot.from_sample_storage(sample_storage)
-            copied._snapshots.append(snapshot)
+            copied._add_snapshot(snapshot)
         copied.set_snapshot(LATEST)
 
         sample_storage.set_snapshot(current_snapshot_id)
         return copied
+
+    @classmethod
+    def from_dict(
+        cls,
+        sample: Sample,
+        rois: dict[str, list[RoiType]],
+        features: dict[str, list[FeatureType]],
+        snapshots: list[str],
+        states: dict[str, SampleProcessStatus],
+        roi_type: type[RoiType],
+        feature_type: type[FeatureType],
+    ) -> OnMemorySampleStorage[RoiType, FeatureType]:
+        """Create a new instance from sample, Roi and Feature data.
+
+        :param sample: the sample associated with the data
+        :param rois: a dictionary that maps snapshot ids to a list of ROIs in the snapshot
+        :param features: a dictionary that maps snapshot ids to a list of features in the snapshot
+        :param snapshots: the list of snapshots to create
+        :param state_list: a mapping from snapshot id to sample data state
+
+        """
+        data = cls(sample, roi_type, feature_type)
+        for snapshot_id in snapshots:
+            snapshot_roi = rois.get(snapshot_id)
+            if snapshot_roi is None:
+                raise ValueError(f"rois dictionary must contain a ROI list for snapshot {snapshot_id}.")
+            snapshot_features = features.get(snapshot_id)
+
+            if snapshot_features is None:
+                raise ValueError(f"rois dictionary must contain a ROI list for snapshot {snapshot_id}.")
+
+            snapshot_state = states.get(snapshot_id)
+            if snapshot_state is None:
+                raise ValueError(f"states dictionary must contain a state for snapshot {snapshot_id}.")
+
+            snapshot = OnMemorySampleStorageSnapshot(sample, snapshot_id, snapshot_state, roi_type, feature_type)
+            snapshot.add_rois(*snapshot_roi)
+            snapshot.add_features(*snapshot_features)
+            data._add_snapshot(snapshot)
+        return data
 
 
 class OnMemorySampleStorageSnapshot(Generic[RoiType, FeatureType]):
