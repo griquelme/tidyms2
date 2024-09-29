@@ -5,7 +5,7 @@ Storage
 
 .. automodule:: tidyms2.core.storage
    :show-inheritance:
-   :exclude-members:
+   :members: SampleStorage, AssayStorage
       
 .. _storage-memory-api:
 

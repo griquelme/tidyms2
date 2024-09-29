@@ -1,7 +1,7 @@
 TidyMS2
 =======
 
-A library for processing Mass spectrometry data.
+A toolkit for creating Mass Spectrometry preprocessing workflows.
 
 
 .. toctree::

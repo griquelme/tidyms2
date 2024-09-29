@@ -6,12 +6,11 @@ import json
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Annotated, Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, Self, TypeVar
 from uuid import UUID
 
 import pydantic
 from pydantic.functional_validators import BeforeValidator
-from typing_extensions import Self
 
 from ..utils.common import create_id
 from ..utils.numpy import FloatArray1D
@@ -33,12 +32,12 @@ class Roi(TidyMSBaseModel):
     New ROIs subclasses are created by inheritance of this class and setting
     data fields using Pydantic's standard approach.
 
-    For Numpy array fields, check out the `tidyms.core.numpy.FloatingArray` and
-    `tidyms.core.numpy.IntArray` types which provide type checking for arrays
+    For Numpy array fields, check out the `tidyms.utils.numpy.FloatingArray` and
+    `tidyms.utils.numpy.IntArray` types which provide type checking for arrays
     and efficient serialization/deserialization.
 
-    The field contains a unique identifier for the ROI and is managed internally by
-    the library. It MUST not be set directly by the user.
+    The id field contains a unique identifier for the ROI and is managed internally by
+    the library. It **MUST** not be set directly by the user.
 
     Refer to the :ref:`developer guides <developer-guide>` for an example on how to create a new
     ROI class.
@@ -51,14 +50,15 @@ class Roi(TidyMSBaseModel):
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
     @classmethod
-    def from_str(cls, s: str, sample: Sample) -> Self:
+    def from_str(cls, ser: str, sample: Sample) -> Self:
         """Create a ROI instance from a JSON string.
 
-        :param s: a serialized ROI obtained using the `to_str` method.
+        :param ser: a serialized ROI obtained using the `to_str` method
+        :param sample: a sample to associate with the ROI
         :return: a new ROI instance.
 
         """
-        return cls(sample=sample, **json.loads(s))
+        return cls(sample=sample, **json.loads(ser))
 
     def to_str(self) -> str:
         """Serialize a ROI into a string.
@@ -80,17 +80,19 @@ class Annotation(TidyMSBaseModel):
 
     group: int = -1
     """The :term:`feature group` id. Group features from different samples based on their chemical
-    identity. Used to create a data matrix. Set to ``-1`` if not assigned to any group.
+    identity. Used to create a data matrix. If set to ``-1`` the feature is not assigned to any group.
     """
 
     isotopologue_label: int = -1
-    """Group features from the same isotopic envelope in a sample. Set to ``-1`` if not annotated."""
+    """Group features from the same isotopic envelope in a sample. If set to ``-1`` the feature is
+    not associated with any group of isotopologues in a sample."""
 
     isotopologue_index: int = -1
-    """Position of the feature in an isotopic envelope. Set to ``-1`` if not annotated."""
+    """Position of the feature in an isotopic envelope.  If set to ``-1`` the feature is
+    not associated with any group of isotopologues in a sample."""
 
     charge: int = -1
-    """Feature charge state. Set to ``-1`` if not annotated."""
+    """Feature charge state. If set to ``-1`` the feature charge state is not defined"""
 
 
 RoiType = TypeVar("RoiType", bound=Roi)
@@ -103,15 +105,15 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
     subclasses are created by inheritance of this class and setting data fields using Pydantic's
     standard approach.
 
-    There are two type of data fields for features:
+    There are two field types for features:
 
     Data fields
         contain information to represent the feature. e.g. the start and end position of a
         chromatographic peak. These fields are represented as standard pydantic fields.
     Descriptors
         describe feature characteristics. e.g, the peak width or peak area in a chromatographic
-        peak. ALL descriptors MUST be floats. These fields are represented as pydantic computed
-        fields. Descriptors MUST be decorated with `pydantic.computed_field`. It is also
+        peak. **ALL** descriptors **MUST** be floats. These fields are represented as pydantic
+        computed fields. Descriptors **MUST** be decorated with `pydantic.computed_field`. It is also
         recommended to use the `functools.cached_property` decorator to cache the descriptor value.
         As an example:
 
@@ -131,7 +133,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
                     self.custom_descriptor = 100.0
 
         The mz, area and height descriptors are set as abstract methods and need
-        to be implemented for all subclasses.
+        to be implemented for all concrete Feature classes.
 
     Finally, three attributes are defined for the Feature class: `id`, `roi` and `annotation`.
     These parameters are managed internally by the library and they MUST never be set directly
