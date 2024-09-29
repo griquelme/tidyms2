@@ -250,7 +250,13 @@ class TestOnMemorySampleStorage:
         storage_with_snapshot.create_snapshot("new-snapshot")
         assert storage_with_snapshot.get_snapshot_id() == memory.LATEST
 
-    def test_list_snapshots_no_snapshots_return_list_with_latest_snapshot_id(self, storage):
+    def test_list_snapshots_no_snapshots_on_creation(self, storage):
+        assert storage.list_snapshots() == []
+
+    def test_list_snapshots_on_storage_with_data_but_no_snapshots_has_only_latest_snapshot_id(
+        self, storage, roi1, roi2
+    ):
+        storage.add_rois(roi1, roi2)
         assert storage.list_snapshots() == [memory.LATEST]
 
     def test_list_snapshots(self, storage_with_snapshot):
@@ -453,13 +459,13 @@ class TestAssayStorageSampleData(AssayStorageFixtures):
         for roi in sample_data1.list_rois():
             assert assay_with_sample_data.has_roi(roi.id)
 
-    def test_fetch_rois_from_sample(self, assay_with_sample_data, sample_data1):
+    def test_fetch_rois_by_sample(self, assay_with_sample_data, sample_data1):
         expected = sample_data1.list_rois()
         actual = assay_with_sample_data.fetch_rois_by_sample(sample_data1.get_sample().id)
         assert actual
         assert all(x.equal(y) for x, y in zip(expected, actual))
 
-    def test_fetch_rois_from_invalid_sample_raises_error(self, assay_with_sample_data):
+    def test_fetch_rois_by_sample_invalid_sample_raises_error(self, assay_with_sample_data):
         with pytest.raises(exceptions.SampleNotFound):
             assay_with_sample_data.fetch_rois_by_sample("invalid-sample-id")
 
