@@ -20,18 +20,25 @@ class Registry(Generic[T]):
             raise RegistryError(f"Entry {id_} not found in {self._name} registry.")
         return self._records[id_]
 
-    def register(self, entry: type[T]) -> type[T]:
+    def register(self, *ids: str):
         """Add a class to the registry.
 
         Use as a decorator.
 
         """
-        id_ = entry.__name__
-        if id_ in self._records:
-            raise RepeatedIdError(id_)
+        for id_ in ids:
+            if id_ in self._records:
+                raise RepeatedIdError(id_)
 
-        self._records[id_] = entry
-        return entry
+        def wrapper(entry: type[T]) -> type[T]:
+            if not ids:
+                self._records[entry.__name__] = entry
+            else:
+                for id_ in ids:
+                    self._records[id_] = entry
+            return entry
+
+        return wrapper
 
 
 operator_registry = Registry("operator")

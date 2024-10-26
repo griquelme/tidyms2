@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import pathlib
 from collections import OrderedDict
-from typing import BinaryIO, Generator, Protocol, Self, TextIO, TypeVar
+from typing import Generator, Protocol, Self
 
 from typing_extensions import Callable
 
 from .enums import MSDataMode
-from .exceptions import ReaderNotFound
 from .models import Chromatogram, MSSpectrum, Sample
+from .registry import Registry
+
+reader_registry: Registry[Reader] = Registry("reader")
 
 
 class MSData:
@@ -44,8 +46,8 @@ class MSData:
 
     def __init__(
         self,
-        path: pathlib.Path | TextIO | BinaryIO,
-        reader: type[Reader] | str | None = None,
+        path: pathlib.Path,
+        reader: type[Reader] | None = None,
         centroid: MSDataMode = MSDataMode.CENTROID,
         centroider: Callable[[MSSpectrum], MSSpectrum] | None = None,
         cache: int = -1,
@@ -53,14 +55,8 @@ class MSData:
         start_time: float = 0.0,
         end_time: float | None = None,
     ):
-        if isinstance(path, pathlib.Path) and reader is None:
-            ext = path.suffix
-            reader = get_reader_from_extension(ext)
-        elif isinstance(reader, str):
-            reader = get_reader(reader)
-        elif reader is None:
-            msg = "Reader must be specified for file objects."
-            raise ValueError(msg)
+        if reader is None:
+            reader = reader_registry.get(path.suffix[1:])
 
         self.ms_level = ms_level
         self.start_time = start_time
@@ -161,7 +157,7 @@ def _get_spectrum_size(spectrum: MSSpectrum) -> int:
 class Reader(Protocol):
     """Reader interface for raw data."""
 
-    def __init__(self, src: pathlib.Path | TextIO | BinaryIO): ...
+    def __init__(self, src: pathlib.Path): ...
 
     def get_chromatogram(self, index: int) -> Chromatogram:
         """Retrieve a chromatogram from file."""
@@ -178,69 +174,3 @@ class Reader(Protocol):
     def get_n_spectra(self) -> int:
         """Retrieve the total number of spectra."""
         ...
-
-
-ReaderType = TypeVar("ReaderType", bound=Reader)
-
-_REGISTERED_READERS: dict[str, type[Reader]] = dict()
-_EXTENSION_TO_READER: dict[str, str] = dict()
-
-
-def get_reader_from_extension(ext: str) -> type[Reader]:
-    """Fetch a MS data reader from a file extension."""
-    type_ = _EXTENSION_TO_READER.get(ext)
-
-    if type_ is None:
-        msg = f"No reader associated with extension {ext}."
-        raise ValueError(msg)
-
-    return get_reader(type_)
-
-
-def get_reader(type_: str) -> type[Reader]:
-    """Retrieve a Reader type from the registry.
-
-    Parameters
-    ----------
-    type_ : str
-        The name of the Processor to retrieve.
-
-    Returns
-    -------
-    type[Processor]
-
-    Raises
-    ------
-    ProcessorTypeNotRegistered
-        If a non-registered Processor name is requested
-
-    """
-    try:
-        return _REGISTERED_READERS[type_]
-    except KeyError as e:
-        raise ReaderNotFound(type_) from e
-
-
-def list_reader_types() -> list[str]:
-    """Retrieve the list of Feature types."""
-    return list(_REGISTERED_READERS)
-
-
-def register(*formats: str):
-    """Add a reader to the registry.
-
-    Parameters
-    ----------
-    formats : str
-        the formats associated with the reader. Files with these formats will
-        automatically recognized when working with :py:class:`tidyms.io.MSData`.
-
-    """
-
-    def wrapper(reader: type[ReaderType]) -> type[ReaderType]:
-        _REGISTERED_READERS[reader.__name__] = reader
-        for fmt in formats:
-            _EXTENSION_TO_READER[fmt] = reader.__name__
-        return reader
-
-    return wrapper

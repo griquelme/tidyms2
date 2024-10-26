@@ -60,7 +60,7 @@ class ConcreteFeature(AnnotableFeature[ConcreteRoi]):
         return IsotopicEnvelope(mz=mz, p=p)
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
     n_roi: int = 3
     """The number of dummy ROI to extract."""
@@ -83,7 +83,7 @@ class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
         return cls()
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]):
     max_length: int = 2
     """Crop ROI length to max length. ROIs with length greater than this value are deleted."""
@@ -101,7 +101,7 @@ class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]
         return cls()
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeature]):
     n_features: int = 2
     """The number of features to extract from each ROI."""
@@ -116,7 +116,7 @@ class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeat
         return cls()
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, ConcreteFeature]):
     feature_value: int = 5
     """The value to set in feature data."""
@@ -134,7 +134,7 @@ class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, Concrete
         return cls()
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyAnnotationPatcher(operators.AnnotationPatcher):
     """Set annotation group to a fixed values in all features."""
 
@@ -157,7 +157,7 @@ class DummyAnnotationPatcher(operators.AnnotationPatcher):
         pass
 
 
-@operator_registry.register
+@operator_registry.register()
 class DummyDescriptorPatcher(operators.DescriptorPatcher):
     """Set descriptor to a fixed value in all features."""
 
