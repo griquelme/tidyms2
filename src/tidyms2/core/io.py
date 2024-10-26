@@ -132,7 +132,7 @@ class MSDataCache:
     def add(self, spectrum: MSSpectrum) -> None:
         """Store a spectrum."""
         self.cache[spectrum.index] = spectrum
-        self.size += _get_spectrum_size(spectrum)
+        self.size += spectrum.get_nbytes()
         self.trim_cache()
 
     def get(self, index: int) -> MSSpectrum | None:
@@ -147,11 +147,7 @@ class MSDataCache:
         if self.max_size > -1:
             while self.size > self.max_size:
                 _, spectrum = self.cache.popitem(last=False)
-                self.size -= _get_spectrum_size(spectrum)
-
-
-def _get_spectrum_size(spectrum: MSSpectrum) -> int:
-    return spectrum.int.nbytes + spectrum.mz.nbytes
+                self.size -= spectrum.get_nbytes()
 
 
 class Reader(Protocol):
