@@ -6,6 +6,7 @@ description = "Tools to process mass spectrometry data."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "httpx>=0.27.2",
     "numpy>=2.1.0",
     "pydantic>=2.8.2",
     "sqlalchemy>=2.0.35",
