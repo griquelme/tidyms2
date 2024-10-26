@@ -239,11 +239,11 @@ class AssayStorage(Protocol, Generic[RoiType, FeatureType]):
         """Retrieve the list of all snapshots."""
         ...
 
-    def patch_annotations(self, *patch: AnnotationPatch) -> None:
+    def patch_annotations(self, *patches: AnnotationPatch) -> None:
         """Update feature annotation values."""
         ...
 
-    def patch_descriptors(self, *patch: DescriptorPatch) -> None:
+    def patch_descriptors(self, *patches: DescriptorPatch) -> None:
         """Update feature descriptors values."""
         ...
 
