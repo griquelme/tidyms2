@@ -17,10 +17,6 @@ class PipelineConfigurationError(ValueError):
     """Exception raised when an invalid configuration is set in a pipeline."""
 
 
-class ReaderNotFound(ValueError):
-    """Exception raised when a reader is not found for a specific format."""
-
-
 class RepeatedIdError(ValueError):
     """Exception raised when trying to add a resource with an existing id."""
 
@@ -47,3 +43,7 @@ class SnapshotNotFound(ValueError):
 
 class SnapshotError(ValueError):
     """Exception raised from snapshot data related errors."""
+
+
+class DatasetNotFound(ValueError):
+    """Exception raised when a dataset is not found."""
