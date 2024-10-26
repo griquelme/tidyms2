@@ -70,7 +70,7 @@ class TestSQLiteAssayStorageOnDisk(AssayStorageFixtures):
         host = tmp_path / "assay.db"
         assay = sqlite.SQLiteAssayStorage("assay", host, ConcreteRoi, ConcreteFeature)
         assay.add_sample_data(sample_data1)
-        return assay
+        assert True
 
 
 class TestSQLiteAssayStorage(AssayStorageFixtures):
