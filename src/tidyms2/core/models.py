@@ -394,6 +394,10 @@ class MSSpectrum(TidyMSBaseModel):
     centroid: bool = True
     """Set to ``True`` if the spectrum was converted to centroid mode. ``False`` otherwise."""
 
+    def get_nbytes(self) -> int:
+        """Get the number of bytes stored in m/z and intensity arrays."""
+        return self.int.nbytes + self.mz.nbytes
+
 
 class Chromatogram(TidyMSBaseModel):
     """Chromatogram representation."""
