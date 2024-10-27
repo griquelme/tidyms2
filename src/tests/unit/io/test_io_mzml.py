@@ -44,6 +44,14 @@ class TestMZMLReader:
         assert len(all_spectra) == expected_n_spectra
         assert all(isinstance(x, MSSpectrum) for x in all_spectra)
 
+    def test_get_all_spectra_rebuild_index(self, raw_data_dir: pathlib.Path, filename: str):
+        ms_data = MSData(raw_data_dir / filename, reader=MZMLReader, rebuild_index=True)
+        expected_n_spectra = ms_data.get_n_spectra()
+        all_spectra = [ms_data.get_spectrum(x) for x in range(expected_n_spectra)]
+
+        assert len(all_spectra) == expected_n_spectra
+        assert all(isinstance(x, MSSpectrum) for x in all_spectra)
+
     def test_get_chromatogram(self, raw_data_dir: pathlib.Path, filename: str):
         ms_data = MSData(raw_data_dir / filename, reader=MZMLReader)
         chromatogram = ms_data.get_chromatogram(0)

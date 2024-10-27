@@ -40,13 +40,57 @@ import zlib
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
-from typing import Any, BinaryIO, TextIO, cast
+from typing import Any, cast
 from xml.etree.ElementTree import Element, fromstring
 
 import numpy as np
 
 from ..core.io import reader_registry
 from ..core.models import Chromatogram, MSSpectrum
+
+
+@reader_registry.register("mzML", "mzml")
+class MZMLReader:
+    """mzML format reader."""
+
+    def __init__(self, src: Path, rebuild_index: bool = False):
+        self.path = src
+        sp_offset, chrom_offset, index_offset = _build_offset_list(self.path, rebuild_index)
+        self.spectra_offset = sp_offset
+        self.chromatogram_offset = chrom_offset
+        self.index_offset = index_offset
+
+        self.n_chromatograms = len(self.chromatogram_offset)
+        self.n_spectra = len(self.spectra_offset)
+
+    def get_spectrum(self, index: int) -> MSSpectrum:
+        """Retrieve a spectrum from file."""
+        return _get_spectrum(
+            self.path,
+            self.spectra_offset,
+            self.chromatogram_offset,
+            self.index_offset,
+            index,
+        )
+
+    def get_n_spectra(self) -> int:
+        """Return the number of spectra in the file."""
+        return self.n_spectra
+
+    def get_n_chromatograms(self) -> int:
+        """Return the number of chromatogram in the file."""
+        return self.n_chromatograms
+
+    def get_chromatogram(self, index: int) -> Chromatogram:
+        """Retrieve a chromatogram from file."""
+        return _get_chromatogram(
+            self.path,
+            self.spectra_offset,
+            self.chromatogram_offset,
+            self.index_offset,
+            index,
+        )
+
 
 UNSUPPORTED_COMPRESSION = frozenset(
     (
@@ -122,59 +166,17 @@ class MZMLError(ValueError):
     """Exception raised when an error happens while parsing an mzML file."""
 
 
-@reader_registry.register("mzML", "mzml")
-class MZMLReader:
-    """mzML format reader."""
-
-    def __init__(self, src: Path | BinaryIO | TextIO):
-        self.path = cast(Path, src)  # TODO: remove cast
-        sp_offset, chrom_offset, index_offset = build_offset_list(self.path)
-        self.spectra_offset = sp_offset
-        self.chromatogram_offset = chrom_offset
-        self.index_offset = index_offset
-
-        self.n_chromatograms = len(self.chromatogram_offset)
-        self.n_spectra = len(self.spectra_offset)
-
-    def get_spectrum(self, index: int) -> MSSpectrum:
-        """Retrieve a spectrum from file."""
-        return get_spectrum(
-            self.path,
-            self.spectra_offset,
-            self.chromatogram_offset,
-            self.index_offset,
-            index,
-        )
-
-    def get_n_spectra(self) -> int:
-        """Return the number of spectra in the file."""
-        return self.n_spectra
-
-    def get_n_chromatograms(self) -> int:
-        """Return the number of chromatogram in the file."""
-        return self.n_chromatograms
-
-    def get_chromatogram(self, index: int) -> Chromatogram:
-        """Retrieve a chromatogram from file."""
-        return get_chromatogram(
-            self.path,
-            self.spectra_offset,
-            self.chromatogram_offset,
-            self.index_offset,
-            index,
-        )
-
-
-def build_offset_list(filename: Path) -> tuple[list[int], list[int], int]:
+def _build_offset_list(filename: Path, rebuild_index: bool) -> tuple[list[int], list[int], int]:
     """Find the offset values where Spectrum or Chromatogram elements start.
 
     :param filename: path to a mzML file
+    :param rebuild_index: if set to ``True`` rebuilds the index even if the file is indexed
 
     :return: Offsets where spectrum element start, offsets where chromatogram elements start
         Offset where the index starts. If the file is not indexed, return the file size.
 
     """
-    if is_indexed(filename):
+    if not rebuild_index and is_indexed(filename):
         index_offset = _get_index_offset(filename)
         spectra_offset, chromatogram_offset = _build_offset_list_indexed(filename, index_offset)
     else:
@@ -183,7 +185,7 @@ def build_offset_list(filename: Path) -> tuple[list[int], list[int], int]:
     return spectra_offset, chromatogram_offset, index_offset
 
 
-def get_spectrum(
+def _get_spectrum(
     filename: Path, spectra_offset: list[int], chromatogram_offset: list[int], index_offset: int, n: int
 ) -> MSSpectrum:
     """Extract spectrum data from file.
@@ -199,6 +201,7 @@ def get_spectrum(
     xml_str = _get_xml_data(filename, spectra_offset, chromatogram_offset, index_offset, n, "spectrum")
     elements = list(fromstring(xml_str))
     spectrum = dict()
+    spectrum["index"] = n
     for el in elements:
         tag = el.tag
         if tag == "cvParam":
@@ -219,7 +222,7 @@ def get_spectrum(
     return MSSpectrum(**spectrum)
 
 
-def get_chromatogram(
+def _get_chromatogram(
     filename: Path, spectra_offset: list[int], chromatogram_offset: list[int], index_offset: int, n: int
 ) -> Chromatogram:
     """Extract time and intensity from xml chunk.
@@ -244,7 +247,7 @@ def get_chromatogram(
     return Chromatogram(**chromatogram)
 
 
-class ReverseReader:
+class _ReverseReader:
     """Read file objects starting from the EOF.
 
     :param filename: Path to the file
@@ -366,7 +369,7 @@ def is_indexed(filename: Path) -> bool:
     closing tag, that should be </indexedmzML> if the file is indexed.
 
     """
-    with ReverseReader(filename, 1024, mode="r") as fin:
+    with _ReverseReader(filename, 1024, mode="r") as fin:
         end_tag = "</indexedmzML>"
         chunk = cast(str, fin.read_chunk())
         res = chunk.find(end_tag) != -1
@@ -385,7 +388,7 @@ def _get_index_offset(filename: Path) -> int:
     # reads mzml backwards until the tag is found
     # we exploit the fact that according to the mzML schema the
     # indexListOffset should have neither attributes nor sub elements
-    with ReverseReader(filename, 1024, mode="r") as fin:
+    with _ReverseReader(filename, 1024, mode="r") as fin:
         xml = ""
         ind = -1
         while ind == -1:
