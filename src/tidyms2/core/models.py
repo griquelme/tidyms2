@@ -300,7 +300,7 @@ class AnnotableFeature(Feature[RoiType], ABC):
 
     @staticmethod
     @abstractmethod
-    def compute_isotopic_envelope(*features: AnnotableFeature[RoiType]) -> IsotopicEnvelope:
+    def compute_isotopic_envelope(*features) -> IsotopicEnvelope:
         """Compute the isotopic envelope from a list of isotopologue features.
 
         :param features: the Collection of features used to compute the envelope.
