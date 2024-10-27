@@ -20,51 +20,46 @@ class MSData:
 
     Data is read from disk in a lazy manner and cached in memory.
 
-    Parameters
-    ----------
-    path : pathlib.Path
-        Raw data source.
-    reader : Reader or None, default=None
-        The Reader class to read raw data. If ``None``, the reader is inferred using the file extension.
-    centroid : MSDataMode, default=MSDataMode.CENTROID
-        The mode in which the data is stored.
-    centroider : Callable[[MSSpectrum], MSSpectrum] or None, default=None
-        A function that takes a spectrum in profile mode and converts it to centroid mode.
-    cache : int, default=-1
+    :param path: raw data file path.
+    :param reader: the Reader to read raw data. If ``None``, the reader is inferred using the file extension.
+        If an string is provided, a reader with the provided name is fetched from the reader registry.
+    :param ms_data_mode: the mode in which the data is stored.
+    :param centroider: a function that takes a spectrum in profile mode and converts it to centroid mode. Only
+        used if `ms_data_mode` is set to profile mode.
+    :param cache: int, default=-1
         The maximum cache size, in bytes. The cache will store spectrum data until it surpasses this value. At this
-        point, old entries will be deleted from the cache. If set to``-1``, the cache can grow indefinitely. When
-        working with data streams, the cache size is set to ``-1``, as there is no guarantee that the `seek` method,
-        which is required for repeated access to the file object, is implemented.
-    ms_level : int = 1
-            Skip spectra without this MS level.
-    start_time: float = 0.0
-        Skip spectra with time lower than this value.
-    end_time: float or None, default=None
-        Skip spectra with time greater than this value.
+        point, old entries will be deleted from the cache. If set to``-1``, the cache can grow indefinitely.
+    :param ms_level: skip spectra without this MS level when iterating over spectra.
+    :param start_time: skip spectra with time lower than this value when iterating over data.
+    :param end_time: skip spectra with time greater than this value when iterating over data.
+    :param kwargs: keyword arguments passed to the reader.
 
     """
 
     def __init__(
         self,
         path: pathlib.Path,
-        reader: type[Reader] | None = None,
-        centroid: MSDataMode = MSDataMode.CENTROID,
+        reader: type[Reader] | str | None = None,
+        ms_data_mode: MSDataMode = MSDataMode.CENTROID,
         centroider: Callable[[MSSpectrum], MSSpectrum] | None = None,
         cache: int = -1,
         ms_level: int = 1,
         start_time: float = 0.0,
         end_time: float | None = None,
+        **kwargs,
     ):
         if reader is None:
             reader = reader_registry.get(path.suffix[1:])
+        elif isinstance(reader, str):
+            reader = reader_registry.get(reader)
 
         self.ms_level = ms_level
         self.start_time = start_time
         self.end_time = end_time
 
         self._centroider = centroider
-        self._reader = reader(path)
-        self._centroid = centroid
+        self._reader = reader(path, **kwargs)
+        self._ms_data_mode = ms_data_mode
         self._cache = MSDataCache(max_size=cache)
         self._n_spectra: int | None = None
         self._n_chromatogram: int | None = None
@@ -91,13 +86,14 @@ class MSData:
         if (index < 0) or (index >= n_sp):
             msg = f"`index` must be integer in the interval [0:{n_sp}). Got {index}."
             raise ValueError(msg)
-        spectrum = self._cache.get(index)
-        if spectrum is None:
-            spectrum = self._reader.get_spectrum(index)
-            if self._centroid == MSDataMode.PROFILE and self._centroider is not None:
-                spectrum = self._centroider(spectrum)
 
-            spectrum.centroid = self._centroid == MSDataMode.CENTROID
+        if self._cache.check(index):
+            spectrum = self._cache.get(index)
+        else:
+            spectrum = self._reader.get_spectrum(index)
+            if self._ms_data_mode == MSDataMode.PROFILE and self._centroider is not None:
+                spectrum = self._centroider(spectrum)
+            spectrum.centroid = self._ms_data_mode == MSDataMode.CENTROID
             self._cache.add(spectrum)
         return spectrum
 
@@ -110,10 +106,17 @@ class MSData:
                     yield sp
 
     @classmethod
-    def from_sample(cls, sample: Sample) -> Self:
+    def from_sample(cls, sample: Sample, cache: int = -1) -> Self:
         """Create a new instance using sample information."""
-        params = sample.model_dump(exclude={"id", "group", "order", "batch", "extra", "reader"})
-        return cls(**params)
+        return cls(
+            sample.path,
+            reader=sample.reader,
+            start_time=sample.start_time,
+            end_time=sample.end_time,
+            ms_level=sample.ms_level,
+            ms_data_mode=sample.ms_data_mode,
+            cache=cache,
+        )
 
 
 class MSDataCache:
@@ -133,16 +136,19 @@ class MSDataCache:
         """Store a spectrum."""
         self.cache[spectrum.index] = spectrum
         self.size += spectrum.get_nbytes()
-        self.trim_cache()
+        self._prune()
 
-    def get(self, index: int) -> MSSpectrum | None:
+    def get(self, index: int) -> MSSpectrum:
         """Retrieve a spectrum from the cache. If not found, returns ``None``."""
-        spectrum = self.cache.get(index)
-        if isinstance(spectrum, MSSpectrum):
-            self.cache.move_to_end(index)
+        spectrum = self.cache[index]
+        self.cache.move_to_end(index)
         return spectrum
 
-    def trim_cache(self) -> None:
+    def check(self, index: int) -> bool:
+        """Check if the provided index is in the cache."""
+        return index in self.cache
+
+    def _prune(self) -> None:
         """Delete entries until the cache size is lower than max_size."""
         if self.max_size > -1:
             while self.size > self.max_size:

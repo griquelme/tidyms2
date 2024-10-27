@@ -14,6 +14,7 @@ from pydantic.functional_validators import BeforeValidator
 
 from ..utils.common import create_id
 from ..utils.numpy import FloatArray1D
+from .enums import MSDataMode
 
 
 class TidyMSBaseModel(pydantic.BaseModel):
@@ -342,6 +343,12 @@ class Sample(pydantic.BaseModel):
 
     ms_level: pydantic.PositiveInt = pydantic.Field(default=1, repr=False)
     """the sample MS level"""
+
+    reader: str | None = None
+    """a custom reader name to read raw data."""
+
+    ms_data_mode: MSDataMode = MSDataMode.CENTROID
+    """the mode in which the sample data is stored."""
 
     start_time: pydantic.NonNegativeFloat = pydantic.Field(default=0.0, repr=False)
     """Minimum acquisition time of MS scans to include. If ``None``, start from the first scan"""

@@ -39,18 +39,18 @@ class MSInstrument(enum.Enum):
     ORBITRAP = "orbitrap"
 
 
-class Polarity(enum.Enum):
+class Polarity(str, enum.Enum):
     """Scan polarity."""
 
-    POSITIVE = 1
-    NEGATIVE = 2
+    POSITIVE = "positive"
+    NEGATIVE = "negative"
 
 
-class MSDataMode(enum.Enum):
+class MSDataMode(str, enum.Enum):
     """Raw data mode."""
 
-    PROFILE = 1
-    CENTROID = 2
+    PROFILE = "profile"
+    CENTROID = "centroid"
 
 
 class IDFeatureDescriptors(str, enum.Enum):

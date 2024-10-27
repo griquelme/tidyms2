@@ -63,6 +63,7 @@ class SampleModel(BaseOrmModel):
 
     path: Mapped[str] = mapped_column(String, nullable=False)
     reader: Mapped[str] = mapped_column(String, nullable=True)
+    ms_data_mode: Mapped[str] = mapped_column(String, nullable=True)
     ms_level: Mapped[int] = mapped_column(Integer)
     start_time: Mapped[float] = mapped_column(Float)
     end_time: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -72,7 +73,7 @@ class SampleModel(BaseOrmModel):
     @classmethod
     def from_sample(cls, sample: Sample) -> SampleModel:
         """Convert to pydantic model."""
-        d = sample.model_dump()
+        d = sample.model_dump(mode="json")
         if sample.extra is not None:
             d["extra"] = json.dumps(sample.extra)
         return SampleModel(**d)
