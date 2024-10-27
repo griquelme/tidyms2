@@ -5,7 +5,7 @@ dev-install:
 
 .PHONY: clean
 clean:
-	rm -rf .venv
+	rm -rf .venv .pytest_cache .ruff_cache htmlcov docs/_build
 	find -iname "*.pyc" -delete
 
 .PHONY: check-format
