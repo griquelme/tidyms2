@@ -1,7 +1,7 @@
 import pytest
 
-from tidyms2.core.io import MSData, MSDataCache
 from tidyms2.core.models import Sample
+from tidyms2.io.msdata import MSData, MSDataCache
 from tidyms2.io.mzml import MZMLReader
 
 

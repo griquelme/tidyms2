@@ -45,8 +45,8 @@ from xml.etree.ElementTree import Element, fromstring
 
 import numpy as np
 
-from ..core.io import reader_registry
 from ..core.models import Chromatogram, MSSpectrum
+from .msdata import reader_registry
 
 
 @reader_registry.register("mzML", "mzml")
