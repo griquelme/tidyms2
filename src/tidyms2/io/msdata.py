@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import pathlib
 from collections import OrderedDict
-from typing import Generator, Protocol, Self
+from typing import Generator, Self
 
 from typing_extensions import Callable
 
-from .enums import MSDataMode
-from .models import Chromatogram, MSSpectrum, Sample
-from .registry import Registry
-
-reader_registry: Registry[Reader] = Registry("reader")
+from ..core.enums import MSDataMode
+from ..core.models import Chromatogram, MSSpectrum, Sample
+from .reader import Reader, reader_registry
 
 
 class MSData:
@@ -154,25 +152,3 @@ class MSDataCache:
             while self.size > self.max_size:
                 _, spectrum = self.cache.popitem(last=False)
                 self.size -= spectrum.get_nbytes()
-
-
-class Reader(Protocol):
-    """Reader interface for raw data."""
-
-    def __init__(self, src: pathlib.Path): ...
-
-    def get_chromatogram(self, index: int) -> Chromatogram:
-        """Retrieve a chromatogram from file."""
-        ...
-
-    def get_spectrum(self, index: int) -> MSSpectrum:
-        """Retrieve a spectrum from file."""
-        ...
-
-    def get_n_chromatograms(self) -> int:
-        """Retrieve the total number of chromatogram."""
-        ...
-
-    def get_n_spectra(self) -> int:
-        """Retrieve the total number of spectra."""
-        ...
