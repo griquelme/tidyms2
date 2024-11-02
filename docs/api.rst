@@ -9,3 +9,4 @@ API reference
    api/core
    api/storage
    api/lcms
+   api/chemistry
