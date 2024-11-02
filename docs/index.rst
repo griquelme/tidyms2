@@ -8,6 +8,7 @@ A toolkit for creating Mass Spectrometry preprocessing workflows.
    :maxdepth: 2
    :caption: Contents:
 
+   guides
    overview
    api
    glossary

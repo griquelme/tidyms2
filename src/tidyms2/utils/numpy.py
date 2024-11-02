@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import base64
 import json
-from typing import Literal, TypeVar
+from typing import Iterable, Literal, TypeVar
 
+import numpy
 from numpy import floating, frombuffer, integer
 from numpy.typing import NDArray
 from pydantic.functional_serializers import PlainSerializer
@@ -48,6 +49,49 @@ def validate_serializable_array(arr: NDArray) -> NDArray:
     if isinstance(arr, str):
         arr = json_str_to_array(arr)
     return arr
+
+
+def cartesian_product_from_ranges(*args: list[int]) -> IntArray:
+    """Create an array where each row is an element in the cartesian product.
+
+    :param args: the list of integers to build the cartesian product
+
+    """
+    product = numpy.zeros(shape=(1, 0), dtype=int)
+
+    for x in args:
+        n_row, n_col = product.shape
+        new_shape = (n_row * len(x), n_col + 1)
+        new_product = numpy.zeros(shape=new_shape, dtype=int)
+        ind = numpy.repeat(numpy.arange(n_row), len(x))
+        new_column = numpy.tile(x, n_row)
+        new_product[:, :n_col] = product[ind]
+        new_product[:, -1] = new_column
+        product = new_product
+    return product
+
+
+def cartesian_product_from_iterable(*args: Iterable):
+    """Compute the cartesian product of args as a 2D array."""
+    if not args:
+        raise ValueError("At least one argument is required to compute the cartesian product.")
+    res = None
+    for x in args:
+        if res is None:
+            # initialize cartesian product array
+            res = numpy.array(x)
+            res = res.reshape((res.size, 1))
+        else:
+            x = numpy.array(x)
+            row, col = res.shape
+            new_res_shape = (row * x.size, col + 1)
+            new_res = numpy.zeros(shape=new_res_shape, dtype=res.dtype)
+            ind = numpy.repeat(numpy.arange(row), x.size)
+            new_col = numpy.tile(x, row)
+            new_res[:, :col] = res[ind]
+            new_res[:, -1] = new_col
+            res = new_res
+    return res
 
 
 FloatDtype = TypeVar("FloatDtype", bound=floating)

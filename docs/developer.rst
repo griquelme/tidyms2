@@ -1,7 +1,7 @@
-.. _developer-guide:
+.. _developer-guides:
 
-Developer guide
-===============
+Developer guides
+================
 
 The :py:class:`~tidyms2.storage.memory.OnMemorySampleStorage` class implements the sample storage
 protocol and is suited for most sample preprocessing workflows.
