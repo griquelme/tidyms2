@@ -94,6 +94,87 @@ def cartesian_product_from_iterable(*args: Iterable):
     return res
 
 
+def _find_closest_sorted(x: numpy.ndarray, xq: numpy.ndarray | float | int) -> IntArray1D:
+    """Find the index in x closest to each xq element. Assumes that x is sorted.
+
+    :param x: Sorted 1D array
+    :param xq: search vector
+    :return: an int array with indices of elements in `x` closest to each `xq` element.
+    :raise ValueError: when x or xq are empty.
+
+    """
+    if isinstance(xq, (float, int)):
+        xq = numpy.array(xq)
+
+    if x.size == 0:
+        msg = "`x` must be a non-empty array."
+        raise ValueError(msg)
+
+    if xq.size == 0:
+        return numpy.array([], dtype=int)
+
+    ind = numpy.searchsorted(x, xq)
+
+    if ind.size == 1:
+        if ind == 0:
+            return ind
+        elif ind == x.size:
+            return ind - 1
+        else:
+            return ind - ((xq - x[ind - 1]) < (x[ind] - xq))
+
+    else:
+        # cases where the index is between 1 and x.size - 1
+        mask = (ind > 0) & (ind < x.size)
+        ind[mask] -= (xq[mask] - x[ind[mask] - 1]) < (x[ind[mask]] - xq[mask])
+        # when the index is x.size, then the closest index is x.size -1
+        ind[ind == x.size] = x.size - 1
+        return ind
+
+
+def find_closest(x: numpy.ndarray, xq: numpy.ndarray | float | int, is_sorted: bool = True) -> IntArray1D:
+    """Find the index in `x` closest to each `xq` element.
+
+    :param x: reference array
+    :param xq: search vector
+    :param is_sorted: if set to ``True``, assumes that `x` is sorted.
+    :return: an int array with indices of elements in `x` closest to each `xq` element.
+    :raise ValueError: when x or xq are empty.
+
+    """
+    if is_sorted:
+        return _find_closest_sorted(x, xq)
+    else:
+        sorted_index = numpy.argsort(x)
+        closest_index = _find_closest_sorted(x[sorted_index], xq)
+        return sorted_index[closest_index]
+
+
+def gauss(grid: numpy.ndarray, mu: float, sigma: float, amp: float) -> numpy.ndarray:
+    """Create a gaussian curve from a grid.
+
+    :param grid: an array with grid points used to create the gaussian curve
+    :param mu : the gaussian mean
+    :param sigma: the gaussian standard deviation
+    :param amp: the gaussian amplitude
+
+    """
+    gaussian = amp * numpy.power(numpy.e, -0.5 * ((grid - mu) / sigma) ** 2)
+    return gaussian
+
+
+def gaussian_mixture(x: numpy.ndarray, *gaussian_params: tuple[float, float, float]) -> numpy.ndarray:
+    """Create a gaussian mixture using a grid.
+
+    :param grid: an array with grid points used to create the gaussian curve
+    :param gaussian_params: a tuple of mean, standard deviation and amplitude for each gaussian component
+    """
+    components = numpy.zeros((len(gaussian_params), x.size))
+    for row, component_params in enumerate(gaussian_params):
+        components[row] = gauss(x, *component_params)
+    return components.sum(axis=0)
+
+
 FloatDtype = TypeVar("FloatDtype", bound=floating)
 IntDtype = TypeVar("IntDtype", bound=integer)
 
