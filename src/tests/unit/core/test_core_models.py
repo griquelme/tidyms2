@@ -45,12 +45,12 @@ class TestFeature:
 
     @pytest.fixture(scope="class")
     def feature(self, roi) -> ConcreteFeature:
-        return ConcreteFeature(data=1, roi=roi)
+        return ConcreteFeature(data_mz=1, roi=roi)
 
     def test_serialization(self, feature):
         serialized = feature.to_str()
         expected = ConcreteFeature.from_str(serialized, feature.roi, feature.annotation)
-        assert expected.data == feature.data
+        assert expected.data_mz == feature.data_mz
         assert expected.roi == feature.roi
         assert expected.annotation is not None
         assert expected.annotation.id == feature.annotation.id
@@ -95,11 +95,11 @@ class TestFeature:
 
     @pytest.fixture(scope="class")
     def ft1(self, roi):
-        return ConcreteFeature(roi=roi, data=1)
+        return ConcreteFeature(roi=roi, data_mz=1)
 
     @pytest.fixture(scope="class")
     def ft2(self, roi):
-        return ConcreteFeature(roi=roi, data=2)
+        return ConcreteFeature(roi=roi, data_mz=2)
 
     def test_order_lt(self, ft1, ft2):
         assert ft1 < ft2
