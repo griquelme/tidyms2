@@ -32,6 +32,7 @@ class TestEnvelopeValidator:
 
 class TestEnvelopeScorer:
     max_length = 5
+    max_M = 1000.0
 
     @pytest.fixture(scope="class")
     def scorer(self):
@@ -83,7 +84,7 @@ class TestEnvelopeScorer:
     @pytest.mark.parametrize("f_str", ["C2H3N", "N2H4", "C3N3H3"])
     def test_scorer_positive_defects_element_only(self, f_str):
         bounds = {"C": (0, 10), "H": (0, 10), "N": (0, 10)}
-        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length)
+        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length, max_M=self.max_M)
         scorer = EnvelopeScorer(config)
 
         f = Formula(f_str)
@@ -97,7 +98,7 @@ class TestEnvelopeScorer:
     @pytest.mark.parametrize("f_str", ["CS2", "C2OS2", "C3SO"])
     def test_scorer_negative_elements_only(self, f_str):
         bounds = {"C": (0, 10), "O": (0, 10), "S": (0, 10)}
-        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length)
+        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length, max_M=self.max_M)
         scorer = EnvelopeScorer(config)
 
         f = Formula(f_str)
@@ -111,7 +112,7 @@ class TestEnvelopeScorer:
     @pytest.mark.parametrize("f_str", ["H2O", "H3PO4", "H2SO4"])
     def test_no_carbon_scorer(self, f_str):
         bounds = {"H": (0, 10), "O": (0, 5), "S": (0, 5), "P": (0, 5)}
-        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length)
+        config = EnvelopeScorerConfiguration(bounds=bounds, max_length=self.max_length, max_M=self.max_M)
         scorer = EnvelopeScorer(config)
 
         f = Formula(f_str)
