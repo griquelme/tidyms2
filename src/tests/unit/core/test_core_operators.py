@@ -155,7 +155,7 @@ class TestFeatureTransformer:
     def test_apply(self, sample_storage_with_features, op):
         op.apply(sample_storage_with_features)
 
-        assert all(x.data == op.feature_value for x in sample_storage_with_features.list_features())
+        assert all(x.data_mz == op.feature_value for x in sample_storage_with_features.list_features())
         assert sample_storage_with_features.get_status().roi_extracted
 
 

@@ -6,7 +6,7 @@ from functools import cached_property
 from pathlib import Path
 from random import randint, random
 
-from pydantic import computed_field
+from pydantic import Field, computed_field
 from typing_extensions import Self
 
 from tidyms2.core import models, operators
@@ -24,30 +24,34 @@ class ConcreteRoi(Roi):
 
 
 class ConcreteFeature(AnnotableFeature[ConcreteRoi]):
-    data: int
+    data_mz: float = Field(repr=False)
+    """A proxy variable for the feature m/z."""
 
-    @computed_field
+    data_area: float = Field(repr=False, default=100.0)
+    """A proxy variable for the feature area"""
+
+    @computed_field(repr=False)
     @cached_property
     def custom_descriptor(self) -> float:
         return 100.0
 
-    @computed_field
+    @computed_field(repr=False)
     @cached_property
     def area(self) -> float:
-        return 100.0 * self.data
+        return self.data_area
 
-    @computed_field
+    @computed_field(repr=False)
     @cached_property
     def mz(self) -> float:
-        return 100.0 * self.data
+        return self.data_mz
 
-    @computed_field
+    @computed_field(repr=False)
     @cached_property
     def height(self) -> float:
-        return 50.0 * self.data
+        return self.data_area
 
     def equal(self, other: ConcreteFeature) -> bool:
-        return self.data == other.data
+        return self.data_mz == other.data_mz
 
     def compare(self, other: Self) -> float:
         return 1.0
@@ -124,8 +128,8 @@ class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, Concrete
     param2: str = "default"
 
     def transform_feature(self, feature: ConcreteFeature) -> ConcreteFeature | None:
-        if feature.data <= self.feature_value:
-            feature.data = self.feature_value
+        if feature.data_mz <= self.feature_value:
+            feature.data_mz = self.feature_value
             return feature
         return None
 
@@ -195,4 +199,14 @@ def create_roi(sample: Sample) -> ConcreteRoi:
 
 def create_feature(roi: ConcreteRoi) -> ConcreteFeature:
     data = randint(0, 10)
-    return ConcreteFeature(roi=roi, data=data)
+    return ConcreteFeature(roi=roi, data_mz=data)
+
+
+def create_features_from_formula(formula_str: str, sample: Sample) -> list[ConcreteFeature]:
+    formula = Formula(formula_str)
+    env = formula.get_isotopic_envelope()
+    q = abs(formula.charge) if formula.charge else 1
+    features = list()
+    for Mk, pk in zip(env.mz, env.p):
+        features.append(ConcreteFeature(data_mz=Mk / q, data_area=pk, roi=ConcreteRoi(sample=sample)))
+    return features

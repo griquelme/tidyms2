@@ -135,7 +135,7 @@ class TestOnMemorySampleStorage:
         assert not storage.has_feature(feature_id)
 
         # check that feature is not added on creation
-        feature = helpers.ConcreteFeature(id=feature_id, roi=roi1, data=1)
+        feature = helpers.ConcreteFeature(id=feature_id, roi=roi1, data_mz=1)
         assert not storage.has_feature(feature_id)
 
         # check ok after add
@@ -149,8 +149,8 @@ class TestOnMemorySampleStorage:
     def test_add_multiple_features(self, storage, roi1):
         storage.add_rois(roi1)
 
-        ft1 = helpers.ConcreteFeature(id=create_id(), roi=roi1, data=1)
-        ft2 = helpers.ConcreteFeature(id=create_id(), roi=roi1, data=1)
+        ft1 = helpers.ConcreteFeature(id=create_id(), roi=roi1, data_mz=1)
+        ft2 = helpers.ConcreteFeature(id=create_id(), roi=roi1, data_mz=1)
 
         assert not storage.has_feature(ft1.id)
         assert not storage.has_feature(ft2.id)
@@ -366,7 +366,7 @@ class TestOnMemorySampleStorage:
         assert feature_snapshot.roi.id != feature_latest.roi.id
         assert feature_latest.roi.equal(feature_snapshot.roi)
         assert feature_latest.equal(feature_snapshot)
-        feature_latest.data = 1000
+        feature_latest.data_mz = 1000
         assert not feature_latest.equal(feature_snapshot)
 
     def test_from_sample_creates_same_sample_data(self, storage_with_snapshot):
