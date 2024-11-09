@@ -263,7 +263,6 @@ class Peak(AnnotableFeature[MZTrace]):
         """
         scan_start = 0
         scan_end = 10000000000  # dummy value
-        # TODO: refactor this.
         for ft in features:
             scan_start = max(scan_start, ft.roi.scan[ft.start])
             scan_end = min(scan_end, ft.roi.scan[ft.end - 1])

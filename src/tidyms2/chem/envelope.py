@@ -397,7 +397,6 @@ def _find_result_envelopes(
 def _create_12c_envelope(
     formula_generator: FormulaGenerator, table: PeriodicTable, cache: HomoAtomicEnvelopeCache, length: int
 ) -> Envelope:
-    # TODO: replace formula generator with envelope generator bounds
     c12 = table.get_isotope("12C")
     c = table.get_element("C")
     c12_bounds = formula_generator.bounds.bounds.get(c12)

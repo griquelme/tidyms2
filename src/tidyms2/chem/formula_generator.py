@@ -77,13 +77,13 @@ class FormulaGenerator:
 
         """
         if self._results is None:
-            raise ValueError("TODO: add error message.")
+            raise ValueError("No results found. This method must be called after `generate_formulas`")
         return self._results
 
     def get_n_results(self) -> int:
         """Retrieve the number of formulas found after a query."""
         if self._n_results is None:
-            raise ValueError("TODO: add error message.")
+            raise ValueError("No results found. This method must be called after `generate_formulas`")
         return self._n_results
 
     def generate_formulas(

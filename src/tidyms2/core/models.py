@@ -315,7 +315,6 @@ class GroupAnnotation(TidyMSBaseModel):
 
     envelope: IsotopicEnvelope or None, default=None
 
-    TODO: add merge list to models.
     merged : list[int] or None, default=None
     The list of feature groups merged into the feature group, if feature merging was applied.
 
