@@ -148,7 +148,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
     roi: RoiType = pydantic.Field(repr=False)
     """The ROI where the feature was detected."""
 
-    annotation: Annotation | None = None
+    annotation: Annotation | None = pydantic.Field(repr=False, default=None)
     """Annotation data of the feature."""
 
     # TODO: remove order functions
