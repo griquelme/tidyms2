@@ -9,6 +9,7 @@ from random import randint, random
 from pydantic import Field, computed_field
 from typing_extensions import Self
 
+from tidyms2.chem import Formula
 from tidyms2.core import models, operators
 from tidyms2.core.enums import MSInstrument, Polarity, SeparationMode
 from tidyms2.core.models import AnnotableFeature, IsotopicEnvelope, Roi, Sample
@@ -202,9 +203,9 @@ def create_feature(roi: ConcreteRoi) -> ConcreteFeature:
     return ConcreteFeature(roi=roi, data_mz=data)
 
 
-def create_features_from_formula(formula_str: str, sample: Sample) -> list[ConcreteFeature]:
+def create_features_from_formula(formula_str: str, sample: Sample, n_isotopologues: int = 10) -> list[ConcreteFeature]:
     formula = Formula(formula_str)
-    env = formula.get_isotopic_envelope()
+    env = formula.get_isotopic_envelope(n_isotopologues)
     q = abs(formula.charge) if formula.charge else 1
     features = list()
     for Mk, pk in zip(env.mz, env.p):
