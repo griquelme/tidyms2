@@ -25,7 +25,7 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
     minimum and maximum values of formula coefficients in generated formulas. If element
     symbols are provided, the most abundant isotope is used for formula generation."""
 
-    max_M: pydantic.PositiveFloat | None = None
+    max_M: pydantic.PositiveFloat
     """Maximum mass value for generated formulas. If provided, it is used to update the bounds.
     For example, if it is set to ``300`` and the bounds for 32S are ``(0, 10)``, then the
     updated bounds for 32S will be ``(0, 9)`` as all formulas containing 32S atoms will have a
@@ -59,7 +59,7 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
         if extra is not None:
             bounds.update(extra)
 
-        return cls(bounds=bounds, **kwargs)
+        return cls(bounds=bounds, max_M=m, **kwargs)
 
     @pydantic.model_validator(mode="before")
     @classmethod
