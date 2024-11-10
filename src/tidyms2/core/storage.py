@@ -110,10 +110,6 @@ class SampleStorage(Protocol, Generic[RoiType, FeatureType]):
         """List ROIs extracted from the sample."""
         ...
 
-    def list_samples(self) -> list[Sample]:
-        """List samples in the assay."""
-        ...
-
     def list_snapshots(self) -> list[str]:
         """List all available snapshots."""
         ...
