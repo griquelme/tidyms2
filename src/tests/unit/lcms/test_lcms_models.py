@@ -89,7 +89,9 @@ class TestPeak:
     def peak(self, trace: MZTrace) -> Peak:
         return Peak(start=self.peak_start, apex=self.peak_apex, end=self.peak_end, roi=trace)
 
-    @pytest.mark.parametrize("start,apex,end", [(0, 0, 10), (10, 5, 12), (5, 10, 10), (5, 10, 8), (0, 10, trace_size)])
+    @pytest.mark.parametrize(
+        "start,apex,end", [(0, 0, 10), (10, 5, 12), (5, 10, 10), (5, 10, 8), (0, 10, trace_size + 1)]
+    )
     def test_invalid_peak_definition_raises_error(self, trace, start, apex, end):
         with pytest.raises(pydantic.ValidationError):
             Peak(start=start, apex=apex, end=end, roi=trace)
