@@ -12,24 +12,26 @@ SimulatedLCMSSampleFactory
 from __future__ import annotations
 
 import pathlib
-from io import StringIO
 
 import numpy as np
 import pydantic
 from typing_extensions import Self
 
 from ..chem import EM, Formula
-from ..core.models import Chromatogram, MSSpectrum
+from ..core.models import Chromatogram, MSSpectrum, Sample
+from ..io.reader import reader_registry
 from ..utils.numpy import FloatArray1D
 
 
+@reader_registry.register()
 class SimulatedLCMSDataReader:
     """Read simulated LC-MS data files."""
 
-    def __init__(self, src: pathlib.Path, config: SimulatedLCMSSampleFactory | None = None) -> None:
-        if config is None:
-            config = SimulatedLCMSSampleFactory()
-        self._sample = config.make()
+    def __init__(self, src: pathlib.Path | Sample) -> None:
+        if isinstance(src, pathlib.Path) or src.extra is None:
+            msg = "Simulated LC-MS sample only work with sample models created with the simulated sample factory."
+            raise ValueError(msg)
+        self._sample = SimulatedLCMSSample(**src.extra)
         self.spectrum_factory = MSSpectrumFactory(self._sample)
 
     def get_chromatogram(self, index: int) -> Chromatogram:
@@ -106,21 +108,19 @@ class SimulatedLCMSSampleFactory(pydantic.BaseModel):
     adducts: list[SimulatedLCMSAdductSpec] = list()
     """the list of adducts to include in the simulated sample."""
 
-    def make(self):
+    def __call__(self, id: str, **kwargs) -> Sample:
         """Create a new simulated sample model."""
+        if "path" not in kwargs:
+            kwargs["path"] = pathlib.Path(".")
+
+        kwargs["reader"] = SimulatedLCMSDataReader.__name__
         features: list[SimulatedLCMSFeature] = list()
         for adduct in self.adducts:
             features.extend(adduct.create_features())
         features = sorted(features, key=lambda x: x.mz)
-        return SimulatedLCMSSample(config=self.config, features=features)
+        extra = SimulatedLCMSSample(config=self.config, features=features).model_dump()
 
-    def make_file(self, path: pathlib.Path):
-        """Create a new simulated sample file."""
-        self.make().to_json(path)
-
-    def make_fileobj(self):
-        """Create a text file object."""
-        return StringIO(self.make().model_dump_json())
+        return Sample(id=id, extra=extra, **kwargs)
 
 
 class SimulatedLCMSSample(pydantic.BaseModel):

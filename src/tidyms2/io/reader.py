@@ -5,7 +5,7 @@ from __future__ import annotations
 import pathlib
 from typing import Protocol
 
-from ..core.models import Chromatogram, MSSpectrum
+from ..core.models import Chromatogram, MSSpectrum, Sample
 from ..core.registry import Registry
 
 reader_registry: Registry[Reader] = Registry("reader")
@@ -14,7 +14,7 @@ reader_registry: Registry[Reader] = Registry("reader")
 class Reader(Protocol):
     """Reader interface for raw data."""
 
-    def __init__(self, src: pathlib.Path): ...
+    def __init__(self, src: pathlib.Path | Sample): ...
 
     def get_chromatogram(self, index: int) -> Chromatogram:
         """Retrieve a chromatogram from file."""

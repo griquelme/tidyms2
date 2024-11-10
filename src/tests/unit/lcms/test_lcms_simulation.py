@@ -14,31 +14,36 @@ def factory_with_grid(lcms_sample_factory: simulation.SimulatedLCMSSampleFactory
 
 class TestSimulatedLCMSSample:
     def test_make_grid_no_spec_ok(self, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
-        sample = lcms_sample_factory.make()
-        grid = sample.make_grid()
-        assert grid.size == len(sample.features)
+        sample = lcms_sample_factory(id="sample")
+        assert sample.extra is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        grid = simulated_sample_spec.make_grid()
+        assert grid.size == len(simulated_sample_spec.features)
         assert np.all(np.diff(grid) > 0.0)
 
     def test_make_grid_with_spec(self, factory_with_grid: simulation.SimulatedLCMSSampleFactory):
-        sample = factory_with_grid.make()
-        grid = sample.make_grid()
-        assert sample.config.grid is not None
-        assert grid.size == sample.config.grid.size
+        sample = factory_with_grid(id="sample")
+        assert sample.extra is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        grid = simulated_sample_spec.make_grid()
+        assert simulated_sample_spec.config.grid is not None
+        assert grid.size == simulated_sample_spec.config.grid.size
         assert np.all(np.diff(grid) > 0.0)
 
     def test_make_grid_no_features_return_empty_array(self):
         factory = simulation.SimulatedLCMSSampleFactory()
-        sample = factory.make()
-        grid = sample.make_grid()
+        sample = factory(id="sample")
+        assert sample.extra is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        grid = simulated_sample_spec.make_grid()
         assert grid.size == 0
 
 
 class TestSimulatedMSData:
     @pytest.fixture(scope="class")
-    def data(self, tmp_path_factory, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
-        reader = simulation.SimulatedLCMSDataReader
-        path = tmp_path_factory.mktemp("data")
-        return MSData(path, reader=reader, config=lcms_sample_factory)
+    def data(self, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
+        sample = lcms_sample_factory(id="sample")
+        return MSData(sample)
 
     def test_get_spectrum(self, data: MSData):
         index = 0
