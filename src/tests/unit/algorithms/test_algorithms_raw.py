@@ -6,20 +6,24 @@ import pytest
 from tidyms2.algorithms import raw
 from tidyms2.core.models import Chromatogram, MSSpectrum, Sample
 from tidyms2.io import MSData
-from tidyms2.lcms.simulation import SimulatedLCMSDataReader, SimulatedLCMSSampleFactory
+from tidyms2.lcms.simulation import SimulatedLCMSSample
 
 
 @pytest.fixture
-def ms_data(tmp_path_factory, lcms_sample_factory: SimulatedLCMSSampleFactory):
-    reader = SimulatedLCMSDataReader
-    path = tmp_path_factory.mktemp("data")
-    return MSData(path, reader=reader, config=lcms_sample_factory)
+def sample(lcms_sample_factory) -> Sample:
+    return lcms_sample_factory(id="sample")
 
 
 @pytest.fixture
-def mz_list(lcms_sample_factory: SimulatedLCMSSampleFactory) -> list[float]:
-    sample = lcms_sample_factory.make()
-    return list(sample.make_grid())
+def ms_data(sample: Sample):
+    return MSData(sample)
+
+
+@pytest.fixture
+def mz_list(sample: Sample) -> list[float]:
+    assert sample.extra is not None
+    sample_spec = SimulatedLCMSSample(**sample.extra)
+    return list(sample_spec.make_grid())
 
 
 class TestMakeRoi:

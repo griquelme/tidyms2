@@ -44,7 +44,7 @@ class MSData:
     def __init__(
         self,
         src: pathlib.Path | Sample,
-        reader: type[Reader] | str | None = None,
+        reader: type[Reader] | None = None,
         mode: MSDataMode = MSDataMode.CENTROID,
         centroider: Callable[[MSSpectrum], MSSpectrum] | None = None,
         cache: int = -1,
@@ -60,13 +60,13 @@ class MSData:
             )
         self.sample = src
 
-        if reader is None:
+        if reader is None and isinstance(self.sample.reader, str):
+            reader = reader_registry.get(self.sample.reader)
+        elif reader is None:
             reader = reader_registry.get(self.sample.path.suffix[1:])
-        elif isinstance(reader, str):
-            reader = reader_registry.get(reader)
 
         self.centroider = centroider
-        self._reader = reader(self.sample.path, **kwargs)
+        self._reader = reader(self.sample, **kwargs)
         self._cache = MSDataCache(max_size=cache)
         self._n_spectra: int | None = None
         self._n_chromatogram: int | None = None

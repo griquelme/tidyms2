@@ -45,7 +45,7 @@ from xml.etree.ElementTree import Element, fromstring
 
 import numpy as np
 
-from ..core.models import Chromatogram, MSSpectrum
+from ..core.models import Chromatogram, MSSpectrum, Sample
 from .msdata import reader_registry
 
 
@@ -53,8 +53,8 @@ from .msdata import reader_registry
 class MZMLReader:
     """mzML format reader."""
 
-    def __init__(self, src: Path, rebuild_index: bool = False):
-        self.path = src
+    def __init__(self, src: Path | Sample, rebuild_index: bool = False):
+        self.path = src if isinstance(src, Path) else src.path
         sp_offset, chrom_offset, index_offset = _build_offset_list(self.path, rebuild_index)
         self.spectra_offset = sp_offset
         self.chromatogram_offset = chrom_offset
