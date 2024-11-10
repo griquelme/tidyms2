@@ -47,3 +47,7 @@ class SnapshotError(ValueError):
 
 class DatasetNotFound(ValueError):
     """Exception raised when a dataset is not found."""
+
+
+class InvalidSeparationMode(ValueError):
+    """Exception raised when an invalid separation mode is passed."""
