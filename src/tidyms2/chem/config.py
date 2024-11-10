@@ -31,8 +31,12 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
     updated bounds for 32S will be ``(0, 9)`` as all formulas containing 32S atoms will have a
     nominal mass greater than ``300``."""
 
+    def update_bounds(self, bounds: dict[str, tuple[int, int]]) -> None:
+        """Update or add new bounds."""
+        self.bounds.update(bounds)
+
     @classmethod
-    def from_chnops(cls, m: int, extra: dict[str, tuple[int, int]] | None = None, **kwargs) -> Self:
+    def from_chnops(cls, m: int, **kwargs) -> Self:
         """Create a new instance with predefined bounds for CHNOPS elements.
 
         CHNOPS bounds were computed by finding the minimum and maximum coefficient bounds for all molecules
@@ -41,7 +45,6 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
 
         :param m: maximum mass of molecules used to build bounds. Valid values are ``500``, ``1000``,
             ``1500`` or ``2000``.
-        :param extra: extra bounds added to the formula space.
         :param kwargs: extra arguments passed to the constructor.
 
         """
@@ -55,9 +58,6 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
             bounds = {"C": (0, 108), "H": (0, 190), "N": (0, 23), "O": (0, 61), "P": (0, 8), "S": (0, 8)}
         else:
             raise ValueError(f"Valid mass values are 500, 1000, 1500 or 2000. Got {m}.")
-
-        if extra is not None:
-            bounds.update(extra)
 
         return cls(bounds=bounds, max_M=m, **kwargs)
 
