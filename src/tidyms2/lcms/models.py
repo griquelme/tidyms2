@@ -24,21 +24,21 @@ class MZTrace(Roi):
 
     """
 
-    mz: FloatArray1D
+    mz: FloatArray1D = pydantic.Field(repr=False)
     """m/z in each scan. All values are assumed to be non-negative."""
 
-    spint: FloatArray1D
+    spint: FloatArray1D = pydantic.Field(repr=False)
     """intensity in each scan. All values are assumed to be non-negative."""
 
-    time: FloatArray1D
+    time: FloatArray1D = pydantic.Field(repr=False)
     """time in each scan. All values are assumed to be non-negative."""
 
-    scan: IntArray1D
+    scan: IntArray1D = pydantic.Field(repr=False)
     """scan numbers where the ROI is defined. All values are assumed to be non-negative."""
-    noise: FloatArray1D | None = None
+    noise: FloatArray1D | None = pydantic.Field(repr=False, default=None)
     """if provided, represent the noise level at teach time point."""
 
-    baseline: FloatArray1D | None = None
+    baseline: FloatArray1D | None = pydantic.Field(repr=False, default=None)
     """if provided, represent the baseline level at teach time point."""
 
     @pydantic.model_validator(mode="after")
@@ -141,13 +141,13 @@ class Peak(AnnotableFeature[MZTrace]):
 
         return self
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def rt_start(self) -> float:
         """The peak start time."""
         return self.roi.time[self.start].item()
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def rt_end(self) -> float:
         """The peak end time."""
@@ -166,7 +166,7 @@ class Peak(AnnotableFeature[MZTrace]):
         except ZeroDivisionError:
             return nan
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def height(self) -> float:
         """Peak height, defined as the difference between the peak intensity and the peak baseline at the apex."""
@@ -175,14 +175,14 @@ class Peak(AnnotableFeature[MZTrace]):
             height = height - self.roi.baseline[self.apex].item()
         return height
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def area(self) -> float:
         """The peak area."""
         peak_extension = self.roi.get_slice_height(self.start, self.end)
         return trapezoid(peak_extension, self.roi.time[self.start : self.end]).item()
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def width(self) -> float:
         """Compute the peak width.
@@ -206,13 +206,13 @@ class Peak(AnnotableFeature[MZTrace]):
         else:
             return nan
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def extension(self) -> float:
         """The peak extension, defined as the length of the peak region."""
         return self.roi.time[self.end - 1] - self.roi.time[self.start]
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def snr(self) -> float:
         """The peak signal-to-noise ratio.
@@ -239,7 +239,7 @@ class Peak(AnnotableFeature[MZTrace]):
         except ZeroDivisionError:
             return nan
 
-    @pydantic.computed_field
+    @pydantic.computed_field(repr=False)
     @cached_property
     def mz_std(self) -> float:
         """The peak m/z standard deviation."""

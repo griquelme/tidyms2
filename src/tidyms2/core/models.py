@@ -45,7 +45,7 @@ class Roi(TidyMSBaseModel):
 
     """
 
-    sample: Sample
+    sample: Sample = pydantic.Field(repr=False)
     """The sample where the ROI was extracted from."""
 
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
@@ -343,10 +343,12 @@ class Sample(pydantic.BaseModel):
     ms_level: pydantic.PositiveInt = pydantic.Field(default=1, repr=False)
     """the sample MS level"""
 
-    reader: str | None = None
-    """a custom reader name to read raw data."""
+    reader: str | None = pydantic.Field(default=None, repr=False)
+    """The name of a registered data reader to read sample data. If ``None``, the
+    optimal reader is inferred from the file extension.
+    """
 
-    ms_data_mode: MSDataMode = MSDataMode.CENTROID
+    ms_data_mode: MSDataMode = pydantic.Field(default=MSDataMode.CENTROID, repr=False)
     """the mode in which the sample data is stored."""
 
     start_time: pydantic.NonNegativeFloat = pydantic.Field(default=0.0, repr=False)
@@ -366,11 +368,6 @@ class Sample(pydantic.BaseModel):
 
     extra: dict[str, Any] | None = pydantic.Field(default=None, repr=False)
     """extra sample information"""
-
-    reader: str | None = None
-    """The name of a registered data reader to read sample data. If ``None``, the
-    optimal reader is inferred from the file extension.
-    """
 
     @pydantic.field_serializer("path")
     def serialize_path(self, path: Path, _info) -> str:
