@@ -310,15 +310,30 @@ class AnnotableFeature(Feature[RoiType], ABC):
         ...
 
 
-class GroupAnnotation(TidyMSBaseModel):
-    """Store annotation of a :term:`feature group`.
+class GroupAnnotation(pydantic.BaseModel):
+    """Store annotation of a :term:`feature group`."""
 
-    envelope: IsotopicEnvelope or None, default=None
+    model_config = pydantic.ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    merged : list[int] or None, default=None
-    The list of feature groups merged into the feature group, if feature merging was applied.
+    label: int
+    """The feature group label. Identifies features across samples that are originated from the
+    same ionic species."""
 
-    """
+    isotopologue_index: int | None = pydantic.Field(default=None, repr=False)
+    """The position of the feature in an envelope. Only defined if an isotopologue annotation
+    algorithm was applied to the dataset."""
+
+    isotopologue_group: int | None = pydantic.Field(default=None, repr=False)
+    """Label shared between isotopologue features. Only defined if an isotopologue annotation
+    algorithm was applied to the dataset."""
+
+    envelope: IsotopicEnvelope | None = pydantic.Field(default=None, repr=False)
+    """The m/z and abundance values of the envelope members. Only defined if an isotopologue
+    annotation algorithm was applied to the dataset and `isotopologue_index` is ``0``."""
+
+    charge: int | None = pydantic.Field(default=None, repr=False)
+    """The numerical charge of the feature. Only defined if an isotopologue annotation algorithm
+    was applied to the dataset."""
 
 
 class IsotopicEnvelope(pydantic.BaseModel):
