@@ -133,6 +133,8 @@ class EnvelopeValidator(_EnvelopeGenerator):
     """
 
     def __init__(self, config: EnvelopeValidatorConfiguration):
+        config = config.model_copy(deep=True)
+        config.remove_elements_with_a_single_isotope()
         super(EnvelopeValidator, self).__init__(config)
         self.config = config
 

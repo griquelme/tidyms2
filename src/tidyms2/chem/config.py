@@ -94,3 +94,7 @@ class EnvelopeValidatorConfiguration(EnvelopeScorerConfiguration):
 
     p_tol: pydantic.PositiveFloat = 0.05
     """Tolerance threshold to include in the abundance results"""
+
+    def remove_elements_with_a_single_isotope(self) -> None:
+        """Remove elements with a single isotope from the bounds."""
+        self.bounds = {k: v for k, v in self.bounds.items() if len(PTABLE.get_element(k).isotopes) > 1}
