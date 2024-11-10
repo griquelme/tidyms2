@@ -137,7 +137,7 @@ class Peak(AnnotableFeature[MZTrace]):
         assert self.start < self.apex < self.end, msg
 
         msg = "peak end must be lower than m/z trace length."
-        assert self.end < self.roi.scan.size, msg
+        assert self.end <= self.roi.scan.size, msg
 
         return self
 
