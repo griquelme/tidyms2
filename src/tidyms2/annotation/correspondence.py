@@ -101,7 +101,7 @@ def match_features(
     # DBSCAN clustering
     min_samples = _estimate_dbscan_min_sample(samples_per_group, include_groups, params.min_fraction)
     max_size = 100000
-    eps = tolerance[0]
+    eps = tolerance[argmin]
     cluster = _cluster_dbscan(X, eps, min_samples, max_size)
 
     # estimate the number of species per DBSCAN cluster
