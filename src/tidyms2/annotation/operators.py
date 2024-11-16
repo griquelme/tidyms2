@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING, Self
 
+from ..core.dataflow import SampleProcessStatus
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.models import AnnotableFeatureType, RoiType
 from ..core.operators import SampleOperator
@@ -57,3 +58,11 @@ class IsotopologueAnnotator(SampleOperator[RoiType, AnnotableFeatureType], Annot
                 assert_never(never)
 
         return op
+
+    def get_expected_status_in(self) -> SampleProcessStatus:
+        """Get the expected status before isotopologue annotation."""
+        return SampleProcessStatus(roi_extracted=True, feature_extracted=True)
+
+    def get_expected_status_out(self) -> SampleProcessStatus:
+        """Get the expected status after isotopologue annotation."""
+        return SampleProcessStatus(roi_extracted=True, feature_extracted=True, isotopologue_annotated=True)
