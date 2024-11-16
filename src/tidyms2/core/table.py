@@ -74,9 +74,11 @@ class FeatureTable:
         return result
 
     def fetch_descriptors(
-        self, descriptors: Iterable[str], sample_id: str | None = None, copy: bool = False
+        self, descriptors: Iterable[str] | None = None, sample_id: str | None = None, copy: bool = False
     ) -> dict[str, list[float]]:
         """Fetch descriptors from the snapshot."""
+        if descriptors is None:
+            descriptors = list(self._descriptors)
         if sample_id is None and copy:
             result = {x: self._descriptors[x].copy() for x in descriptors}
         elif sample_id is None:
