@@ -18,6 +18,7 @@ from ..core.models import (
     Sample,
 )
 from ..core.storage import SampleStorage
+from ..core.table import FeatureTable
 from ..utils.common import create_id
 
 LATEST = "head"
@@ -55,12 +56,10 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
         features = copy.list_features()
         new_features.update({x.id: sample_id for x in features})
 
-        descriptors = dict()
+        descriptors = list()
         annotations = list()
         for ft in features:
-            for descriptor, value in ft.describe().items():
-                descriptor_list = descriptors.setdefault(descriptor, list())
-                descriptor_list.append(value)
+            descriptors.append(ft.describe())
             annotations.append(ft.annotation)
 
         annotations = [x.annotation for x in features]
@@ -162,6 +161,10 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
     def has_feature(self, feature_id: UUID) -> bool:
         """Check if a Feature with the provided id is in the storage."""
         return self._current.has_feature(feature_id)
+
+    def has_feature_group(self, feature_group: int) -> bool:
+        """Check if a group with the provided id is in the assay."""
+        return self._current.has_feature_group(feature_group)
 
     def fetch_annotations(self, sample_id: str | None = None) -> list[Annotation]:
         """Fetch a copy of the feature annotations.
@@ -695,141 +698,77 @@ class OnMemoryAssayStorageSnapshot:
     def __init__(self, snapshot_id: str, status: AssayProcessStatus):
         self.id = snapshot_id
         self.status = status
+        self._table = FeatureTable()
 
-        self._descriptors: dict[str, list[float]] = dict()
-        self._annotations: list[Annotation] = list()
-        self._fill_values: dict[str, dict[int, float]] = dict()
-        self._feature_groups: dict[int, FeatureGroup]
-
-        self._sample_to_features: dict[str, set[UUID]] = dict()
-        self._group_to_features: dict[int, set[UUID]] = dict()
-
-        # maintains feature index in the snapshot for fast access
-        self._feature_to_index: dict[UUID, int] = dict()
-        self._current_index = 0
-
-    def add_descriptors(self, descriptors: dict[str, list[float]], annotations: list[Annotation]):
+    def add_descriptors(self, descriptors: list[dict[str, float]], annotations: list[Annotation]):
         """Add annotations and descriptors from a sample."""
-        for name, values in descriptors.items():
-            descriptor_list = self._descriptors.setdefault(name, list())
-            descriptor_list.extend(values)
-        self._annotations.extend(annotations)
-
-        for k, ann in enumerate(annotations, start=self._current_index):
-            sample_set = self._sample_to_features.setdefault(ann.sample_id, set())
-            sample_set.add(ann.id)
-            if ann.group > -1:
-                group_set = self._group_to_features.setdefault(ann.group, set())
-                group_set.add(ann.id)
-
-            self._feature_to_index[ann.id] = k
-
-        self._current_index += len(descriptors)
+        self._table.add_descriptors(descriptors, annotations)
 
     def add_feature_groups(self, *feature_groups: FeatureGroup) -> None:
         """Add feature groups to the snapshot."""
-        for group in feature_groups:
-            self._feature_groups[group.group] = group
+        self._table.add_feature_groups(*feature_groups)
 
     def fetch_feature_groups(self) -> list[FeatureGroup]:
         """Fetch feature groups from the snapshot."""
-        return [x.model_copy(deep=True) for x in self._feature_groups.values()]
+        return self._table.fetch_feature_groups()
 
     def has_feature_group(self, group: int) -> bool:
         """Check if a group with the provided id is stored in the assay."""
-        return group in self._feature_groups
+        return self._table.has_feature_group(group)
 
     def fetch_annotations(self, sample_id: str | None = None, copy: bool = False) -> list[Annotation]:
         """Create a list feature annotations.
 
         :param sample_id: If provided, only include annotations from this sample
         """
-        if sample_id is None:
-            result = [x for x in self._annotations]
-        else:
-            indices = [self._feature_to_index[x] for x in self._sample_to_features[sample_id]]
-            result = [self._annotations[x] for x in indices]
-
-        if copy:
-            result = [x.model_copy() for x in result]
-
-        return result
+        return self._table.fetch_annotations(sample_id=sample_id, copy=copy)
 
     def fetch_descriptors(
-        self, descriptors: Iterable[str], sample_id: str | None = None, copy: bool = False
+        self, descriptors: Iterable[str] | None = None, sample_id: str | None = None, copy: bool = False
     ) -> dict[str, list[float]]:
         """Fetch descriptors from the snapshot."""
-        if sample_id is None:
-            result = {x: self._descriptors[x] for x in descriptors}
-        else:
-            indices = [self._feature_to_index[x] for x in self._sample_to_features[sample_id]]
-            result = dict()
-            for name in descriptors:
-                values = self._descriptors[name]
-                result[name] = [values[x] for x in indices]
-        if copy:
-            result = {k: v.copy() for k, v in result.items()}
-        return result
+        return self._table.fetch_descriptors(descriptors=descriptors, sample_id=sample_id, copy=copy)
 
     def fetch_fill_values(self, copy: bool = False) -> dict[str, dict[int, float]]:
         """Fetch snapshot fill values."""
-        if copy:
-            return {k: v.copy() for k, v in self._fill_values.items()}
-        return self._fill_values
+        return self._table.fetch_fill_values(copy=copy)
 
     def add_fill_values(self, fill_values: dict[str, dict[int, float]]) -> None:
         """Add missing values to the snapshot."""
-        for sample_id, features_fill in fill_values.items():
-            for feature_group, value in features_fill.items():
-                sample_fill = self._fill_values.setdefault(sample_id, dict())
-                sample_fill[feature_group] = value
+        self._table.add_fill_values(fill_values)
 
     def get_sample_id(self, feature_id: UUID) -> str:
         """Retrieve the sample id of a feature."""
-        index = self._feature_to_index[feature_id]
-        return self._annotations[index].sample_id
+        return self._table.get_sample_id(feature_id)
 
     def get_ids_by_group(self, group: int) -> list[UUID]:
         """Retrieve all feature ids associated with a feature group."""
-        if group not in self._group_to_features:
-            raise exceptions.FeatureGroupNotFound(group)
-        return [x for x in self._group_to_features[group]]
+        return self._table.get_ids_by_group(group)
 
     def has_feature(self, feature_id: UUID) -> bool:
         """Check if a feature is in the snapshot."""
-        return feature_id in self._feature_to_index
+        return self._table.has_feature(feature_id)
 
     def patch_annotation(self, *patches: AnnotationPatch) -> None:
         """Apply patches to annotations."""
-        for p in patches:
-            if not self.has_feature(p.id):
-                raise exceptions.FeatureNotFound(p.id)
-
-        for p in patches:
-            index = self._feature_to_index[p.id]
-            ann = self._annotations[index]
-            setattr(ann, p.field, p.value)
+        self._table.patch_annotation(*patches)
 
     def list_feature_groups(self) -> list[int]:
         """List all feature groups stored in the assay."""
-        return list(self._feature_groups)
+        return self._table.list_feature_groups()
 
     def patch_descriptors(self, *patches: DescriptorPatch) -> None:
         """Apply patches to descriptors."""
-        for p in patches:
-            if not self.has_feature(p.id):
-                raise exceptions.FeatureNotFound(p.id)
-
-        for p in patches:
-            index = self._feature_to_index[p.id]
-            self._descriptors[p.descriptor][index] = p.value
+        self._table.patch_descriptors(*patches)
 
     def copy_snapshot(self, copy_id: str) -> OnMemoryAssayStorageSnapshot:
         """Create a snapshot copy."""
         res = OnMemoryAssayStorageSnapshot(copy_id, self.status.model_copy(deep=True))
-        descriptors = self.fetch_descriptors(list(self._descriptors), copy=True)
+        descriptor_list = self.fetch_descriptors(copy=True)
         annotations = self.fetch_annotations(copy=True)
         fill_values = self.fetch_fill_values(copy=True)
+        descriptors_names = list(descriptor_list)
+        descriptors = [dict(zip(descriptors_names, values)) for values in zip(*descriptor_list.values())]
         res.add_descriptors(descriptors, annotations)
         res.add_fill_values(fill_values)
         return res
