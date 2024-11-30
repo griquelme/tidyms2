@@ -25,6 +25,10 @@ check-types:
 unit-tests:
 	uv run pytest
 
+.PHONY: integration-tests
+integration-tests:
+	uv run pytest src/tests/integration
+
 .PHONY: coverage
 coverage:
 	uv run pytest --cov=src/tidyms2 && uv run coverage html
