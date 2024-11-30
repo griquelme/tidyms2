@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from ..core.enums import MSDataMode
 from ..core.models import Chromatogram, MSSpectrum, Sample
 from ..io.msdata import MSData
-from ..lcms import MZTrace
+from ..lcms.models import MZTrace
 from ..utils.numpy import FloatArray1D, IntArray1D, find_closest
 
 
@@ -95,10 +95,6 @@ class MakeRoiParameters(BaseRawMsFunctionParameter):
 
     pad: pydantic.NonNegativeInt = 0
     """The number of dummy values to pad the ROI with"""
-
-    smoothing_strength: pydantic.PositiveFloat | None = None
-    """Smooth ROI intensity using a Gaussian kernel. The smoothing strength is the
-    gaussian standard deviation. If ``None``, no smoothing is applied."""
 
     @pydantic.field_validator("multiple_match", mode="before")
     @classmethod
@@ -253,7 +249,7 @@ def make_roi(data: MSData, params: MakeRoiParameters) -> list[MZTrace]:
     roi_maker.flag_as_completed()
     roi_maker.clear_completed_roi()
     scans = np.array(scans)
-    roi_list = roi_maker.tmp_roi_to_roi(scans, rt, params.pad, params.smoothing_strength)
+    roi_list = roi_maker.tmp_roi_to_roi(scans, rt, params.pad)
 
     return roi_list
 
@@ -416,7 +412,7 @@ class _RoiMaker:
         valid_index = np.where(valid_mask)[0]
 
         for i in valid_index:
-            r = deepcopy(self.tmp_roi_list.roi[i])
+            r = self.tmp_roi_list.get_roi_copy(i)
             self.valid_roi.append(r)
 
         self.tmp_roi_list.clear(finished_roi_index)
@@ -425,23 +421,21 @@ class _RoiMaker:
         """Mark all ROis as completed."""
         self.tmp_roi_list.missing_count[:] = self.params.max_missing + 1
 
-    def tmp_roi_to_roi(
-        self, valid_scan: np.ndarray, time: np.ndarray, pad: int, smooth: float | None
-    ) -> list[MZTrace]:
+    def tmp_roi_to_roi(self, valid_scan: np.ndarray, time: np.ndarray, pad: int) -> list[MZTrace]:
         """Convert completed valid _TempRoi objects into LCTraces.
 
         :param valid_scan: scan values used to build the ROIs.
         :param time: acquisition time of each scan.
-        :param pad: number of dummy values to pad each ROI.
+
 
         """
+        scan_to_index = {x.item(): k for k, x in enumerate(valid_scan)}
         valid_roi = list()
         while self.valid_roi:
             tmp = self.valid_roi.popleft()
-            tmp.pad(pad, valid_scan)
-            roi = tmp.convert_to_roi(time, valid_scan, self.sample)
-            if smooth is not None:
-                roi.smooth(smooth)
+
+            roi = tmp.to_mz_trace(time, valid_scan, self.params.pad, scan_to_index, self.sample)
+
             valid_roi.append(roi)
         return valid_roi
 
@@ -488,6 +482,12 @@ class _TempRoiList:
         for i, roi in zip(index, new_roi):
             self.roi.insert(i + offset, roi)
             offset += 1
+
+    def get_roi_copy(self, index: int) -> _TempRoi:
+        """Create a deep copy of a temp ROI."""
+        roi_copy = deepcopy(self.roi[index])
+        roi_copy.mz_mean = self.mz_mean[index].item()
+        return roi_copy
 
     def extend(self, match: SpectrumMatch):
         """Extend existing ROI with matching values."""
@@ -537,6 +537,7 @@ class _TempRoi:
         self.mz = deque()
         self.spint = deque()
         self.scan = deque()
+        self.mz_mean = 0.0
 
     def append(self, mz: float, spint: float, scan: int):
         """Append new m/z, intensity and scan values."""
@@ -574,6 +575,57 @@ class _TempRoi:
         self.mz.extend([np.nan] * n_right)
         self.spint.extend([np.nan] * n_right)
         self.scan.extend(valid_scan[end:right_pad_index])
+
+    def to_mz_trace(
+        self,
+        rt: np.ndarray,
+        scans: np.ndarray,
+        pad: int,
+        scan_to_index: dict[int, int],
+        sample: Sample,
+    ) -> MZTrace:
+        """Convert to a m/z trace."""
+        start_idx, end_idx = np.searchsorted(scans, [self.scan[0], self.scan[-1] + 1])
+        start_pad_idx = max(0, start_idx - pad)
+        end_pad_idx = min(scans.size, end_idx + pad)
+
+        trace_scans = scans[start_pad_idx:end_pad_idx].copy()
+        trace_rt = rt[start_pad_idx:end_pad_idx].copy()
+
+        start_idx -= start_pad_idx
+        end_idx -= start_pad_idx
+        end_pad_idx -= start_pad_idx
+        start_pad_idx = 0
+
+        found_index = list()
+        missing_index = list()
+        found_scans = set(self.scan)
+        for idx, scan in enumerate(trace_scans[start_idx:end_idx]):
+            if scan in found_scans:
+                found_index.append(idx)
+            else:
+                missing_index.append(idx)
+
+        trace_mz = np.ones(shape=trace_scans.size, dtype=float) * self.mz_mean
+        trace_mz[found_index] = self.mz
+
+        trace_sp = np.ones(shape=trace_scans.size, dtype=float)
+        trace_sp[found_index] = self.spint
+        if trace_scans.size > len(self.mz):
+            trace_sp[missing_index] = np.interp(missing_index, found_index, self.spint)
+
+        if start_pad_idx < start_idx:
+            slope = (trace_sp[start_idx + 1] - trace_sp[start_idx]) / (trace_rt[start_idx + 1] - trace_rt[start_idx])
+            intercept = trace_sp[start_idx]
+            for idx in range(start_pad_idx, start_idx):
+                trace_sp[idx] = idx * slope + intercept
+
+        if end_idx < end_pad_idx:
+            slope = (trace_sp[end_idx - 1] - trace_sp[end_idx - 2]) / (trace_rt[end_idx - 2] - trace_rt[end_idx - 1])
+            intercept = trace_sp[end_idx - 2]
+            for idx in range(end_idx, end_pad_idx):
+                trace_sp[idx] = idx * slope + intercept
+        return MZTrace(sample=sample, time=trace_rt, mz=trace_mz, scan=trace_scans, spint=trace_sp)
 
     def convert_to_roi(self, rt: np.ndarray, scans: np.ndarray, sample: Sample) -> MZTrace:
         """Convert a TemporaryRoi into a ROI object.

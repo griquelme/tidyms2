@@ -43,9 +43,9 @@ class TestMakeRoi:
         assert len(roi_list) == len(params.targeted_mz)
 
     def test_make_roi_min_intensity(self, ms_data, params):
-        # only two features have intensity larger than 120
-        expected_n_roi = 2
-        params.min_intensity = 120
+        # only two features have intensity larger than 2000
+        expected_n_roi = 1
+        params.min_intensity = 2000.0
         roi_list = raw.make_roi(ms_data, params)
         assert len(roi_list) == expected_n_roi
 
