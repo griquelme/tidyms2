@@ -26,6 +26,50 @@ class TidyMSBaseModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
+class Sample(pydantic.BaseModel):
+    """Store metadata from an individual measurement."""
+
+    path: Annotated[Path, BeforeValidator(lambda x: Path(x))]
+    """Path to a raw data file"""
+
+    id: str
+    """A unique sample identifier"""
+
+    ms_level: pydantic.PositiveInt = pydantic.Field(default=1, repr=False)
+    """the sample MS level"""
+
+    reader: str | None = pydantic.Field(default=None, repr=False)
+    """The name of a registered data reader to read sample data. If ``None``, the
+    optimal reader is inferred from the file extension.
+    """
+
+    ms_data_mode: MSDataMode = pydantic.Field(default=MSDataMode.CENTROID, repr=False)
+    """the mode in which the sample data is stored."""
+
+    start_time: pydantic.NonNegativeFloat = pydantic.Field(default=0.0, repr=False)
+    """Minimum acquisition time of MS scans to include. If ``None``, start from the first scan"""
+
+    end_time: pydantic.NonNegativeFloat | None = pydantic.Field(default=None, repr=False)
+    """Maximum acquisition time of MS scans to include. If ``None``, end at the last scan"""
+
+    group: str = ""
+    """the sample group"""
+
+    order: pydantic.NonNegativeInt = 0
+    """the sample measurement order in an assay"""
+
+    batch: pydantic.NonNegativeInt = pydantic.Field(default=0, repr=False)
+    """the sample analytical batch number in an assay."""
+
+    extra: dict[str, Any] | None = pydantic.Field(default=None, repr=False)
+    """extra sample information"""
+
+    @pydantic.field_serializer("path")
+    def serialize_path(self, path: Path, _info) -> str:
+        """Serialize path into a string."""
+        return str(path)
+
+
 class Roi(TidyMSBaseModel):
     """Base class for :term:`ROIs <roi>` extracted from raw MS data.
 
@@ -344,50 +388,6 @@ class IsotopicEnvelope(pydantic.BaseModel):
 
     p: list[float]
     """The envelope normalized abundance"""
-
-
-class Sample(pydantic.BaseModel):
-    """Store metadata from an individual measurement."""
-
-    path: Annotated[Path, BeforeValidator(lambda x: Path(x))]
-    """Path to a raw data file"""
-
-    id: str
-    """A unique sample identifier"""
-
-    ms_level: pydantic.PositiveInt = pydantic.Field(default=1, repr=False)
-    """the sample MS level"""
-
-    reader: str | None = pydantic.Field(default=None, repr=False)
-    """The name of a registered data reader to read sample data. If ``None``, the
-    optimal reader is inferred from the file extension.
-    """
-
-    ms_data_mode: MSDataMode = pydantic.Field(default=MSDataMode.CENTROID, repr=False)
-    """the mode in which the sample data is stored."""
-
-    start_time: pydantic.NonNegativeFloat = pydantic.Field(default=0.0, repr=False)
-    """Minimum acquisition time of MS scans to include. If ``None``, start from the first scan"""
-
-    end_time: pydantic.NonNegativeFloat | None = pydantic.Field(default=None, repr=False)
-    """Maximum acquisition time of MS scans to include. If ``None``, end at the last scan"""
-
-    group: str = ""
-    """the sample group"""
-
-    order: pydantic.NonNegativeInt = 0
-    """the sample measurement order in an assay"""
-
-    batch: pydantic.NonNegativeInt = pydantic.Field(default=0, repr=False)
-    """the sample analytical batch number in an assay."""
-
-    extra: dict[str, Any] | None = pydantic.Field(default=None, repr=False)
-    """extra sample information"""
-
-    @pydantic.field_serializer("path")
-    def serialize_path(self, path: Path, _info) -> str:
-        """Serialize path into a string."""
-        return str(path)
 
 
 class MSSpectrum(TidyMSBaseModel):
