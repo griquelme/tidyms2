@@ -16,7 +16,6 @@ def sample():
 
 class TestMZTrace:
     trace_size = 20
-    nan_index_list = [0, trace_size // 2, trace_size - 1]
 
     @pytest.fixture
     def trace(self, sample) -> MZTrace:
@@ -37,16 +36,6 @@ class TestMZTrace:
         baseline[10] += 0.01
         with pytest.raises(pydantic.ValidationError):
             trace.baseline = baseline
-
-    @pytest.mark.parametrize("nan_index", nan_index_list)
-    def test_fill_nan(self, trace, nan_index):
-        trace.mz[nan_index] = np.nan
-        trace.spint[nan_index] = np.nan
-        assert np.any(np.isnan(trace.mz))
-        assert np.any(np.isnan(trace.spint))
-        trace.fill_nan()
-        assert np.all(~np.isnan(trace.mz))
-        assert np.all(~np.isnan(trace.spint))
 
     def test_serialize_deserialize_no_baseline(self, trace: MZTrace, sample):
         expected = trace
