@@ -9,8 +9,6 @@ from math import nan
 import numpy as np
 import pydantic
 from scipy.integrate import cumulative_trapezoid, trapezoid
-from scipy.interpolate import interp1d
-from scipy.ndimage import gaussian_filter1d
 from typing_extensions import Self
 
 from ..core.models import AnnotableFeature, IsotopicEnvelope, Roi
@@ -68,39 +66,6 @@ class MZTrace(Roi):
         if self.baseline is not None:
             height = height - self.baseline[start:end]
         return np.maximum(height, 0.0)
-
-    def fill_nan(self):
-        """Fill missing values in the trace.
-
-        Missing m/z values are filled using the mean m/z of the ROI. Missing intensity
-        values are filled using linear interpolation. Missing values on the boundaries
-        are filled by extrapolation. Negative values are set to 0.
-
-        """
-        missing = np.isnan(self.spint)
-        if missing.any():
-            interpolator = interp1d(
-                self.time[~missing],
-                self.spint[~missing],
-                assume_sorted=True,
-                fill_value="extrapolate",  # type: ignore
-            )
-
-            sp_max = np.nanmax(self.spint)
-            sp_min = np.nanmin(self.spint)
-            self.spint[missing] = interpolator(self.time[missing])
-            # bound extrapolated values to max and min observed values
-            self.spint = np.maximum(self.spint, sp_min)
-            self.spint = np.minimum(self.spint, sp_max)
-        if isinstance(self.mz, np.ndarray):
-            self.mz[missing] = np.nanmean(self.mz)
-
-    def smooth(self, smoothing_strength: float):
-        """Smooth the intensity of the trace using a gaussian kernel.
-
-        :param smoothing_strength : Standard deviation of the gaussian kernel.
-        """
-        self.spint = gaussian_filter1d(self.spint, smoothing_strength)
 
     def equals(self, other: Self) -> bool:
         """Check if two m/z traces are equal."""
