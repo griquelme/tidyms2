@@ -1,7 +1,9 @@
+.venv:
+	type uv && uv venv || >&2 echo "Error: uv not found in user PATH."
+
 .PHONY: dev-install
-dev-install:
-	type uv && uv run --all-extras python -c "" || >&2 echo "Error: uv not found in user PATH." && \
-	uv run pre-commit install
+dev-install: .venv
+	uv pip install .[dev,docs] && uv run pre-commit install
 
 .PHONY: clean
 clean:
