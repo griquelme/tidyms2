@@ -126,6 +126,29 @@ class LCTraceBaselineEstimator(RoiTransformer[MZTrace, Peak]):
         return cls()
 
 
+class LCTraceSmoother(RoiTransformer[MZTrace, Peak]):
+    """Smooth LC traces intensity using a gaussian kernel."""
+
+    strength: pydantic.PositiveFloat = 1.0
+    """The smoothing strength, defined as the standard deviation of the gaussian kernel"""
+
+    def transform_roi(self, roi: MZTrace):
+        """Add noise and baseline to an LC trace."""
+        roi.spint = smooth(roi.spint, self.strength)
+        return roi
+
+    @classmethod
+    def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity) -> Self:
+        """Set the processor default parameters.
+
+        :param instrument : the instrument type used in the experimental setup
+        :param separation : the LC platform used in the experimental setup
+        :param polarity : the MS polarity used in the experiment
+
+        """
+        return cls()
+
+
 class PeakExtractor(FeatureExtractor[MZTrace, Peak]):
     """Extract peaks from LC m/z traces.
 
