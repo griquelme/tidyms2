@@ -2,9 +2,16 @@ import os
 import pathlib
 
 import pytest
+from numpy.random import seed
 
 from tidyms2.io.datasets import download_dataset
 from tidyms2.lcms import simulation
+
+
+@pytest.fixture(scope="session", autouse=True)
+def random_seed():
+    seed(1234)
+    return
 
 
 @pytest.fixture(scope="session")
