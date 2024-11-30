@@ -1,6 +1,10 @@
 """TidyMS core exceptions."""
 
 
+class UnprocessedSampleError(ValueError):
+    """Exception raised when an assay processing pipeline is applied on an assay with queued sample data."""
+
+
 class FeatureGroupNotFound(ValueError):
     """Exception raised when a feature group is not found in an assay storage."""
 
