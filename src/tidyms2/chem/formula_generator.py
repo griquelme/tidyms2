@@ -31,7 +31,11 @@ from .context import PTABLE
 
 
 class FormulaGenerator:
-    """Generate sum formulas based on exact mass values."""
+    """Generate sum formulas based on exact mass values.
+
+    Refer to the :ref:`user guide <generating-formulas-guide>` for usage instructions.
+
+    """
 
     def __init__(self, config: FormulaGeneratorConfiguration):
         """FormulaGenerator constructor.

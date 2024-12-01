@@ -26,10 +26,10 @@ class Isotope(pydantic.BaseModel, frozen=True):
     """The exact mass"""
 
     symbol: str
-    """The element symbol."""
+    """The element symbol"""
 
     p: float = pydantic.Field(ge=0.0, le=1.0, repr=False)
-    """The isotope abundance."""
+    """The isotope abundance"""
 
     @pydantic.computed_field(repr=False)
     @cached_property
@@ -58,7 +58,7 @@ class Element(pydantic.BaseModel, frozen=True):
     """The element symbol"""
 
     isotopes: Sequence[Isotope] = pydantic.Field(repr=False)
-    """Maps mass number to isotope"""
+    """Maps mass numbers to isotopes"""
 
     z: pydantic.PositiveInt
     """The atomic number"""

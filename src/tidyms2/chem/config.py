@@ -26,10 +26,7 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
     symbols are provided, the most abundant isotope is used for formula generation."""
 
     max_M: pydantic.PositiveFloat
-    """Maximum mass value for generated formulas. If provided, it is used to update the bounds.
-    For example, if it is set to ``300`` and the bounds for 32S are ``(0, 10)``, then the
-    updated bounds for 32S will be ``(0, 9)`` as all formulas containing 32S atoms will have a
-    nominal mass greater than ``300``."""
+    """Maximum mass value for generated formulas."""
 
     def update_bounds(self, bounds: dict[str, tuple[int, int]]) -> None:
         """Update or add new bounds."""
@@ -40,8 +37,8 @@ class FormulaGeneratorConfiguration(pydantic.BaseModel):
         """Create a new instance with predefined bounds for CHNOPS elements.
 
         CHNOPS bounds were computed by finding the minimum and maximum coefficient bounds for all molecules
-        in the HMDB under a specific mass threshold. This function offers precomputed bounds using all
-        molecules with mass values under 500, 1000, 1500 and 2000.
+        in the `HMDB <http://hmdb.ca>`_ under a specific mass threshold. This function offers precomputed
+        bounds using all molecules with mass values under 500, 1000, 1500 and 2000.
 
         :param m: maximum mass of molecules used to build bounds. Valid values are ``500``, ``1000``,
             ``1500`` or ``2000``.
