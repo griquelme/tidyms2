@@ -1,4 +1,4 @@
-"""LC-MS utilities."""
+"""Utilities to process LC-MS datasets."""
 
 from .assay import create_lcms_assay
 from .models import MZTrace, Peak

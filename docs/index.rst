@@ -1,16 +1,24 @@
+:html_theme.sidebar_secondary.remove:
+:notoc:
+
 TidyMS2
 =======
 
 A toolkit for creating Mass Spectrometry preprocessing workflows.
 
 
+Install it using any of the following methods:
+
+.. include:: installation.rst
+
+and get started with the :ref:`user-guide`
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :hidden:
 
    guides
    overview
    api
    glossary
    developer
-

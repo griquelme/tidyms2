@@ -24,6 +24,8 @@ sys.path.append(os.path.abspath("../src"))
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx_copybutton",
+    "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinxcontrib.autodoc_pydantic",
 ]
@@ -47,6 +49,8 @@ autodoc_pydantic_model_show_json = False
 autodoc_pydantic_settings_show_json = False
 autodoc_pydantic_model_show_field_summary = False
 autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_validator_members = False
+autodoc_pydantic_model_show_validator_summary = False
 autodoc_pydantic_model_undoc_members = False
 autodoc_pydantic_field_list_validators = False
 autodoc_pydantic_field_show_constraints = False

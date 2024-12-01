@@ -18,6 +18,8 @@ from .table import PeriodicTable
 class Formula:
     """Represent a chemical formula as a mapping from isotopes to formula coefficients.
 
+    Refer to the :ref:`user guide <working-with-formulas-guide>` for usage instructions.
+
     :param formula: a string representation of a formula or a mapping from isotopes to formula coefficients
     :param charge: the numerical charge of the formula
     :param context: the chemical context where data is fetch from. In the majority of cases this parameter
@@ -37,7 +39,7 @@ class Formula:
     """
 
     @overload
-    def __init__(self, formula: dict[Isotope, int], charge: int | None, context: ChemicalContext | None = None): ...
+    def __init__(self, formula: dict[Isotope, int], charge: int | None, context: None = None): ...
 
     @overload
     def __init__(self, formula: dict[str, int], charge: int | None, context: ChemicalContext | None = None): ...

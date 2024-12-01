@@ -37,7 +37,7 @@ Sample that is associated with. It also provides chemical identity information s
 charge and isotopologue annotation. There is a one-to-one relationship between a feature and an annotation.
 
 Both ROI an Feature are abstract classes that must be implemented for each assay type (LC-MS, direct injection MS, ...).
-The :ref:`developer-guide` contains detailed information on how to create or customize new ROI and Feature models.
+The :ref:`extending-guide` contains detailed information on how to create or customize new ROI and Feature models.
 
 .. _sample-data-flow:
 
@@ -57,7 +57,7 @@ transformer apply transformations to individual features. Finally, the sample op
 using all available data from a single sample. An example of a sample operator is the built-in isotopologue annotator,
 which labels features as isotopologues and sets its charge state by updating each feature annotation.
 
-All of these operators must be implemented for each ROI-feature pair. Refer to the :ref:`developer-guide`
+All of these operators must be implemented for each ROI-feature pair. Refer to the :ref:`extending-guide`
 for detailed information on how to create new operators.
 
 Each one of these operators require a given sample data state to be applied to sample data. Otherwise, they will

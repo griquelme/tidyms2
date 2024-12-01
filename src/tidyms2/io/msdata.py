@@ -23,11 +23,12 @@ class MSData:
         If the latter is provided, the path to the data source is fetch from the
         :py:attr:`tidyms2.core.models.Sample.path` field.
     :param reader: the Reader to read raw data. If ``None``, the reader is inferred using the file extension.
-        If an string is provided, a reader with the provided name is fetched from the reader registry.
+        If `src` is a sample model and :py:attr:`~tidyms2.core.models.Sample.reader` is defined, the reader will
+        be fetch fetched from the reader registry.
     :param mode: the mode in which the data is stored. If `src` is a sample instance, this parameter is ignored
         and is fetched from the sample data.
     :param centroider: a function that takes a spectrum in profile mode and converts it to centroid mode. Only
-        used if `ms_data_mode` is set to profile mode.
+        used if :py:attr:`mode` is set to profile mode.
     :param cache: int, default=-1
         The maximum cache size, in bytes. The cache will store spectrum data until it surpasses this value. At this
         point, old entries will be deleted from the cache. If set to``-1``, the cache can grow indefinitely.

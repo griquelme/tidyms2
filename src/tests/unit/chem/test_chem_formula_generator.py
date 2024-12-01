@@ -273,9 +273,9 @@ def test__FormulaCoefficients_multiple_isotopes_return_reversed(isotopes):
 
 
 @pytest.mark.parametrize("formula_str", ["C10H10O2", "C9H14", "C7H8N2"])
-def test_FormulaGenerator_bruteforce(formula_str):
+def test_FormulaGenerator_brute_force(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters
@@ -311,9 +311,9 @@ def test_FormulaGenerator_bruteforce(formula_str):
 
 
 @pytest.mark.parametrize("formula_str", ["C9H14", "C7H8N2"])
-def test_FormulaGenerator_bruteforce_no_negative_isotopes(formula_str):
+def test_FormulaGenerator_brute_force_no_negative_isotopes(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters
@@ -349,9 +349,9 @@ def test_FormulaGenerator_bruteforce_no_negative_isotopes(formula_str):
 
 
 @pytest.mark.parametrize("formula_str", ["C9O6", "C7P4"])
-def test_FormulaGenerator_bruteforce_no_positive_isotopes(formula_str):
+def test_FormulaGenerator_brute_force_no_positive_isotopes(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters
@@ -387,9 +387,9 @@ def test_FormulaGenerator_bruteforce_no_positive_isotopes(formula_str):
 
 
 @pytest.mark.parametrize("formula_str", ["H2O", "(13C)O2"])
-def test_FormulaGenerator_bruteforce_no_c12(formula_str):
+def test_FormulaGenerator_brute_force_no_c12(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters
@@ -425,9 +425,9 @@ def test_FormulaGenerator_bruteforce_no_c12(formula_str):
 
 
 @pytest.mark.parametrize("formula_str", ["H3N", "(13C)H4"])
-def test_FormulaGenerator_bruteforce_no_c12_no_negative(formula_str):
+def test_FormulaGenerator_brute_force_no_c12_no_negative(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters
@@ -463,9 +463,9 @@ def test_FormulaGenerator_bruteforce_no_c12_no_negative(formula_str):
 
 
 @pytest.mark.parametrize("formula_str", ["ClO2", "SO3"])
-def test_FormulaGenerator_bruteforce_no_c12_no_positive(formula_str):
+def test_FormulaGenerator_brute_force_no_c12_no_positive(formula_str):
     # Test correctness of the algorithm by comparing the results with the
-    # bruteforce solution.
+    # brute-force solution.
     formula = Formula(formula_str)
     M = formula.get_exact_mass()
     # parameters

@@ -84,7 +84,7 @@ class Roi(TidyMSBaseModel):
     The id field contains a unique identifier for the ROI and is managed internally by
     the library. It **MUST** not be set directly by the user.
 
-    Refer to the :ref:`developer guides <developer-guide>` for an example on how to create a new
+    Refer to the :ref:`developer guides <extending-guide>` for an example on how to create a new
     ROI class.
 
     """
@@ -164,7 +164,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
 
         .. code-block: python
 
-            from functoools import cached_property
+            from functools import cached_property
             from pydantic import computed_field
 
             class MyFeature(Feature):
@@ -184,7 +184,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
     These parameters are managed internally by the library and they MUST never be set directly
     by the user.
 
-    Refer to the :ref:`developer guides <developer-guide>` for an example on how to create a new
+    Refer to the :ref:`developer guides <extending-guide>` for an example on how to create a new
     Feature class.
 
     """

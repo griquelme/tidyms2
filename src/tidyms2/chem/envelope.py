@@ -60,7 +60,7 @@ class _EnvelopeGenerator:
 
         :param M: the exact mass of the envelope
         :param p: the envelope normalized abundances.
-        tolerance : mass tolerance to generate formulas.
+        :param tolerance: mass tolerance to generate formulas.
 
         """
         if len(M) > self.config.max_length:
@@ -120,6 +120,7 @@ class EnvelopeValidator(_EnvelopeGenerator):
 
         .. math::
             dM_{i} = dM^{\textrm{max}} * pq_{i} + dM^{\textrm{min}} (1 - pq_{i})
+
         Where :math:`dM^{\textrm{max}}` is `min_M_tol`, :math:`dM^{\textrm{min}}`
         is `max_M_tol` and :math:`pq_{i}` is the i-th query abundance.
         Using the mass tolerance and abundance tolerance, candidates with
@@ -170,6 +171,9 @@ class EnvelopeValidator(_EnvelopeGenerator):
 class EnvelopeScorer(_EnvelopeGenerator):
     r"""Rank formula candidates by comparing measured and theoretical isotopic envelopes.
 
+    Refer to the :ref:`user guide <scoring-formulas-guide>` for details usage instructions.
+
+    :param config: the envelope generator configuration
     :param scorer: function that scores formula candidate envelopes. If ``None``, the
         function :func:`score_envelope` is used. A custom scoring function can be passed
         with the following signature:
@@ -181,6 +185,7 @@ class EnvelopeScorer(_EnvelopeGenerator):
 
         where `M` and `p` are arrays of the formula candidates exact mass and abundances and
         `Mq` and `pq` are the query mass and query abundance.
+
     kwargs :
         Optional parameter to pass into the scoring function.
 

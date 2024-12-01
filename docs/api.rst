@@ -3,10 +3,14 @@
 API reference
 =============
 
+This page contains detailed information regarding the TidyMS2 API. It assumes that you are familiar
+with the :ref:`library architecture <overview>`.
+
 .. toctree::
    :maxdepth: 1
 
    api/core
-   api/storage
+   api/algorithms
+   api/io
    api/lcms
    api/chemistry

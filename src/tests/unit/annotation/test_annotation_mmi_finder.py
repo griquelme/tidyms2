@@ -142,7 +142,7 @@ def test__find_candidates(config, rules, sample):
     mz = [100.0, 300.0, mono_mz - dm_cl, mono_mz, 456.0]
     sp = [100.0, 200.0, 500.0, 501.0, 34.0]
     peak_list = create_feature_list(mz, sp, sample)
-    monoisotopologue = peak_list[mono_index]
+    monoisotope = peak_list[mono_index]
 
     # find the rule to search the mmi candidate
     m_bin = int(mono_mz // BIN_SIZE)
@@ -150,7 +150,7 @@ def test__find_candidates(config, rules, sample):
 
     data = AnnotationData(peak_list)
 
-    test_candidates = mmi_finder._find_candidate(data, monoisotopologue, charge, i_rules, config)
+    test_candidates = mmi_finder._find_candidate(data, monoisotope, charge, i_rules, config)
     mmi = peak_list[2]
     expected_candidates = [(mmi, 1)]
     assert test_candidates == expected_candidates

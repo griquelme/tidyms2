@@ -1,24 +1,15 @@
-"""Chemistry utilities.
+"""Utilities for working with chemical entities.
 
-Provides:
-
-- a formula object to compute the exact mass and isotopic distribution of molecular formulas.
-- a periodic table with element and isotope information.
-- a formula generator object to search molecular formulas based on exact mass values.
-- an envelope scorer that scores the similarity between experimental and theoretical isotopic envelopes.
-- an envelope validator that checks if a measured envelope may be generated from a combination of elements.
-
-Refer to the :ref:`chemistry use guide <chemistry-user-guide>` for an introduction an examples on how to
+Refer to the :ref:`use guide <chemistry-user-guide>` for an introduction an examples on how to
 use this package.
 
 Constants
 ---------
 - EM : the electron mass
-- PTABLE : a periodic table instance.
 
 """
 
-from .atoms import EM
+from .atoms import EM, Element, Isotope
 from .config import EnvelopeScorerConfiguration, EnvelopeValidatorConfiguration, FormulaGeneratorConfiguration
 from .context import DEFAULT_CONTEXT, ChemicalContext
 from .envelope import EnvelopeScorer, EnvelopeValidator, score_envelope
@@ -31,11 +22,13 @@ __all__ = [
     "EM",
     "PTABLE",
     "ChemicalContext",
+    "Element",
     "EnvelopeScorerConfiguration",
     "EnvelopeValidatorConfiguration",
     "Formula",
     "FormulaGenerator",
     "FormulaGeneratorConfiguration",
+    "Isotope",
     "PeriodicTable",
     "EnvelopeScorer",
     "EnvelopeValidator",
