@@ -14,6 +14,10 @@ clean:
 check-format:
 	uv run ruff check
 
+.PHONY: check-spell
+check-spell:
+	cspell docs src
+
 .PHONY: format
 format:
 	uv run ruff check --fix
