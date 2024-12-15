@@ -1,8 +1,8 @@
 import pytest
 
-from tidyms2.core.models import Sample
+from tidyms2.core.models import MZTrace, Sample
 from tidyms2.lcms import operators
-from tidyms2.lcms.models import MZTrace, Peak
+from tidyms2.lcms.models import Peak
 from tidyms2.lcms.simulation import SimulatedLCMSSample
 from tidyms2.storage.memory import OnMemorySampleStorage
 

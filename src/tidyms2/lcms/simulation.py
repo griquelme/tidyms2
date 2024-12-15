@@ -109,7 +109,12 @@ class SimulatedLCMSSampleFactory(pydantic.BaseModel):
     """the list of adducts to include in the simulated sample."""
 
     def __call__(self, id: str, **kwargs) -> Sample:
-        """Create a new simulated sample model."""
+        """Create a new simulated sample model.
+
+        :param id: the id for the sample
+        :param kwargs: extra sample information passed to the :py:class:`tidyms2.Sample` constructor.
+
+        """
         if "path" not in kwargs:
             kwargs["path"] = pathlib.Path(".")
 

@@ -11,9 +11,8 @@ import pydantic
 from scipy.interpolate import interp1d
 
 from ..core.enums import MSDataMode
-from ..core.models import Chromatogram, MSSpectrum, Sample
+from ..core.models import Chromatogram, MSSpectrum, MZTrace, Sample
 from ..io.msdata import MSData
-from ..lcms.models import MZTrace
 from ..utils.numpy import FloatArray1D, IntArray1D, find_closest
 
 
