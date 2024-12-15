@@ -1,7 +1,7 @@
 """Utilities to process LC-MS datasets."""
 
 from .assay import create_lcms_assay
-from .models import MZTrace, Peak
+from .models import Peak
 from .operators import LCFeatureMatcher, LCTraceBaselineEstimator, LCTraceExtractor, LCTraceSmoother, PeakExtractor
 
 __all__ = [
@@ -10,7 +10,6 @@ __all__ = [
     "LCTraceBaselineEstimator",
     "LCTraceExtractor",
     "LCTraceSmoother",
-    "MZTrace",
     "Peak",
     "PeakExtractor",
 ]

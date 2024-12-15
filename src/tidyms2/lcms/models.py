@@ -11,71 +11,7 @@ import pydantic
 from scipy.integrate import cumulative_trapezoid, trapezoid
 from typing_extensions import Self
 
-from ..core.models import AnnotableFeature, IsotopicEnvelope, Roi
-from ..utils.numpy import FloatArray1D, IntArray1D
-
-
-class MZTrace(Roi):
-    """ROI implementation using m/z traces.
-
-    An m/z trace is a 1D trace containing m/z, time and intensity information across scans.
-
-    """
-
-    mz: FloatArray1D = pydantic.Field(repr=False)
-    """m/z in each scan. All values are assumed to be non-negative."""
-
-    spint: FloatArray1D = pydantic.Field(repr=False)
-    """intensity in each scan. All values are assumed to be non-negative."""
-
-    time: FloatArray1D = pydantic.Field(repr=False)
-    """time in each scan. All values are assumed to be non-negative."""
-
-    scan: IntArray1D = pydantic.Field(repr=False)
-    """scan numbers where the ROI is defined. All values are assumed to be non-negative."""
-    noise: FloatArray1D | None = pydantic.Field(repr=False, default=None)
-    """if provided, represent the noise level at teach time point."""
-
-    baseline: FloatArray1D | None = pydantic.Field(repr=False, default=None)
-    """if provided, represent the baseline level at teach time point."""
-
-    @pydantic.model_validator(mode="after")
-    def check_noise_all_non_negative(self) -> Self:
-        """Validate noise."""
-        if self.noise is not None:
-            msg = "All noise array elements must be non-negative."
-            assert np.all(self.noise >= 0.0), msg
-        return self
-
-    @pydantic.model_validator(mode="after")
-    def check_baseline_lower_or_equal_than_intensity(self) -> Self:
-        """Validate baseline."""
-        if self.baseline is not None:
-            msg = "All baseline elements must be lower than their corresponding trace intensity."
-            assert np.all(self.spint >= self.baseline), msg
-        return self
-
-    def get_slice_height(self, start: int, end: int) -> FloatArray1D:
-        """Compute the trace height in a slice.
-
-        :param start: slice start index.
-        :param end: slice end index.
-
-        """
-        height = self.spint[start:end]
-        if self.baseline is not None:
-            height = height - self.baseline[start:end]
-        return np.maximum(height, 0.0)
-
-    def equals(self, other: Self) -> bool:
-        """Check if two m/z traces are equal."""
-        return (
-            np.array_equal(self.mz, other.mz)
-            and np.array_equal(self.time, other.time)
-            and np.array_equal(self.spint, other.spint)
-            and np.array_equal(self.scan, other.scan)
-            and self.id == other.id
-        )
+from ..core.models import AnnotableFeature, IsotopicEnvelope, MZTrace
 
 
 class Peak(AnnotableFeature[MZTrace]):

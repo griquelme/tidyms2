@@ -3,9 +3,10 @@
 from ..annotation.operators import IsotopologueAnnotator
 from ..core.assay import Assay
 from ..core.enums import MSInstrument, Polarity, SeparationMode
+from ..core.models import MZTrace
 from ..storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
 from ..storage.sqlite import SQLiteAssayStorage
-from .models import MZTrace, Peak
+from .models import Peak
 from .operators import LCFeatureMatcher, LCTraceBaselineEstimator, LCTraceExtractor, PeakExtractor
 
 

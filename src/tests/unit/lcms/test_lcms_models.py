@@ -5,8 +5,8 @@ import numpy as np
 import pydantic
 import pytest
 
-from tidyms2.core.models import Sample
-from tidyms2.lcms.models import MZTrace, Peak
+from tidyms2.core.models import MZTrace, Sample
+from tidyms2.lcms.models import Peak
 
 
 @pytest.fixture(scope="module")

@@ -12,11 +12,11 @@ from ..algorithms.signal import detect_peaks, estimate_baseline, estimate_noise,
 from ..annotation.correspondence import FeatureCorrespondenceParameters, match_features
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.exceptions import InvalidSeparationMode
-from ..core.models import AnnotationPatch, Sample
+from ..core.models import AnnotationPatch, MZTrace, Sample
 from ..core.operators import AnnotationPatcher, FeatureExtractor, RoiExtractor, RoiTransformer
 from ..core.storage import AssayStorage
 from ..io import MSData
-from .models import MZTrace, Peak
+from .models import Peak
 
 if TYPE_CHECKING:
     from typing import assert_never

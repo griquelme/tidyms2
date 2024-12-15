@@ -1,8 +1,9 @@
 import pytest
 
 from tidyms2.annotation import annotation
+from tidyms2.core.models import MZTrace
 from tidyms2.core.operators import Pipeline
-from tidyms2.lcms import LCTraceBaselineEstimator, LCTraceExtractor, MZTrace, Peak, PeakExtractor
+from tidyms2.lcms import LCTraceBaselineEstimator, LCTraceExtractor, Peak, PeakExtractor
 from tidyms2.lcms.simulation import SimulatedLCMSSampleFactory
 from tidyms2.storage.memory import OnMemorySampleStorage
 
