@@ -142,6 +142,14 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
         """List all feature groups in the assay."""
         return self._current.list_feature_groups()
 
+    def get_feature_type(self) -> type[FeatureType]:
+        """Retrieve the Feature class used."""
+        return self._feature_type
+
+    def get_roi_type(self) -> type[RoiType]:
+        """Retrieve the ROI class used."""
+        return self._roi_type
+
     def get_n_features(self) -> int:
         """Get the total number of features in the assay."""
         return sum(x.get_n_features() for x in self._sample_data.values())
