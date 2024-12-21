@@ -5,10 +5,11 @@ from logging import getLogger
 from typing import Generic, Iterable, Literal, overload
 from uuid import UUID
 
-from .exceptions import UnprocessedSampleError
-from .models import Annotation, FeatureType, RoiType, Sample
-from .operators import Pipeline
-from .storage import AssayStorage, SampleStorage
+from ..core.exceptions import UnprocessedSampleError
+from ..core.models import Annotation, FeatureType, RoiType, Sample
+from ..core.operators import Pipeline
+from ..core.storage import AssayStorage
+from .executors import SampleProcessor
 
 logger = getLogger("assay")
 
@@ -29,17 +30,13 @@ class Assay(Generic[RoiType, FeatureType]):
     def __init__(
         self,
         id: str,
-        roi_type: type[RoiType],
-        feature_type: type[FeatureType],
         assay_storage: AssayStorage[RoiType, FeatureType],
-        sample_storage_type: type[SampleStorage],
+        sample_processor: SampleProcessor,
     ):
         self.id = id
         self._sample_queue: OrderedDict[str, Sample] = OrderedDict()
         self._storage = assay_storage
-        self._roi_type = roi_type
-        self._feature_type = feature_type
-        self._sample_storage_type = sample_storage_type
+        self._sample_processor = sample_processor
         self.pipes = self._PipelineContainer(id)
 
     def add_samples(self, *samples: Sample) -> None:
@@ -52,7 +49,7 @@ class Assay(Generic[RoiType, FeatureType]):
             self._sample_queue[sample.id] = sample
 
     def fetch_samples(self, queued: bool = False) -> list[Sample]:
-        """Retrieve a list of samples in the assay.
+        """Retrieve a list of queued or processed samples in the assay.
 
         :param queued: if set to ``True``, return queued samples. Otherwise, fetch processed samples.
 
@@ -113,14 +110,18 @@ class Assay(Generic[RoiType, FeatureType]):
 
     def process_samples(self) -> None:
         """Apply sample pipeline to queued samples."""
-        while self._sample_queue:
-            _, sample = self._sample_queue.popitem(last=False)
-            data = self._sample_storage_type(sample, self._roi_type, self._feature_type)
-            self.pipes.sample.apply(data)
-            self._storage.add_sample_data(data)
+        if self._sample_queue:
+            samples = list(self._sample_queue.values())
+            self._sample_processor.execute(self._storage, self.pipes.sample, *samples)
+            self._empty_sample_queue()
+        else:
+            logger.warning("No samples to process: sample queue is empty.")
 
     def process_assay(self) -> None:
         """Apply assay pipeline to assay data."""
         if self._sample_queue:
             raise UnprocessedSampleError(", ".join(x for x in self._sample_queue))
         self.pipes.assay.apply(self._storage)
+
+    def _empty_sample_queue(self) -> None:
+        self._sample_queue = OrderedDict()
