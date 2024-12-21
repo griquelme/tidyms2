@@ -1,10 +1,11 @@
 """Utilities to create LC-MS assays."""
 
 from ..annotation.operators import IsotopologueAnnotator
-from ..core.assay import Assay
+from ..assay import Assay
+from ..assay.executors import ParallelSampleProcessor, SequentialSampleProcessor
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.models import MZTrace
-from ..storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
+from ..storage.memory import OnMemoryAssayStorage
 from ..storage.sqlite import SQLiteAssayStorage
 from .models import Peak
 from .operators import LCFeatureMatcher, LCTraceBaselineEstimator, LCTraceExtractor, PeakExtractor
@@ -18,6 +19,7 @@ def create_lcms_assay(
     polarity: Polarity,
     annotate_isotopologues: bool = True,
     on_disk: bool = False,
+    max_workers: int = 1,
 ) -> Assay[MZTrace, Peak]:
     """Create a new Assay instance for LC-MS data.
 
@@ -37,7 +39,12 @@ def create_lcms_assay(
     else:
         storage = OnMemoryAssayStorage(id, MZTrace, Peak)
 
-    assay = Assay(id, MZTrace, Peak, storage, OnMemorySampleStorage)
+    if max_workers == 1:
+        executor = SequentialSampleProcessor()
+    else:
+        executor = ParallelSampleProcessor(max_workers=max_workers)
+
+    assay = Assay(id, storage, executor)
 
     sample_ops = list()
     sample_ops.append(LCTraceExtractor.from_defaults(instrument, separation, polarity))

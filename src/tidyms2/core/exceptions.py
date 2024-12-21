@@ -55,3 +55,7 @@ class DatasetNotFound(ValueError):
 
 class InvalidSeparationMode(ValueError):
     """Exception raised when an invalid separation mode is passed."""
+
+
+class SampleProcessorError(ValueError):
+    """Exception raised when a sample processor fails to process a sample."""
