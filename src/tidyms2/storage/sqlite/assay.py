@@ -205,6 +205,14 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
             rois = [self.roi_type.from_str(x.data, sample) for x in models]
         return rois
 
+    def get_feature_type(self) -> type[FeatureType]:
+        """Retrieve the Feature class used."""
+        return self.feature_type
+
+    def get_roi_type(self) -> type[RoiType]:
+        """Retrieve the ROI class used."""
+        return self.roi_type
+
     def get_n_rois(self) -> int:
         """Retrieve the number of ROIs in the assay."""
         with create_session(self.session_factory) as session:

@@ -207,6 +207,14 @@ class AssayStorage(Protocol, Generic[RoiType, FeatureType]):
         """Retrieve the current snapshot id."""
         ...
 
+    def get_feature_type(self) -> type[FeatureType]:
+        """Retrieve the Feature class used."""
+        ...
+
+    def get_roi_type(self) -> type[RoiType]:
+        """Retrieve the ROI class used."""
+        ...
+
     def has_feature(self, feature_id: UUID) -> bool:
         """Check if a feature with the provided id exists."""
         ...
