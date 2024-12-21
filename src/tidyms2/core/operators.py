@@ -307,6 +307,14 @@ class Pipeline:
         self.id = id
         self.operators: list[SampleOperator | AssayOperator | Pipeline] = list()
 
+    def copy(self) -> Pipeline:
+        """Create a copy of the current instance."""
+        cp = Pipeline(self.id)
+        for op in self.operators:
+            op_cp = op.copy() if isinstance(op, Pipeline) else op.model_copy(deep=True)
+            cp.add_operator(op_cp)
+        return cp
+
     def __eq__(self, other) -> bool:
         equal_ids = self.id == other.id
         equal_operators = self.operators == other.operators
