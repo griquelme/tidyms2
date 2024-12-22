@@ -100,7 +100,7 @@ def _find_closest_sorted(x: numpy.ndarray, xq: numpy.ndarray | float | int) -> I
     :param x: Sorted 1D array
     :param xq: search vector
     :return: an int array with indices of elements in `x` closest to each `xq` element.
-    :raise ValueError: when x or xq are empty.
+    :raises ValueError: when x or xq are empty.
 
     """
     if isinstance(xq, (float, int)):
@@ -139,7 +139,7 @@ def find_closest(x: numpy.ndarray, xq: numpy.ndarray | float | int, is_sorted: b
     :param xq: search vector
     :param is_sorted: if set to ``True``, assumes that `x` is sorted.
     :return: an int array with indices of elements in `x` closest to each `xq` element.
-    :raise ValueError: when x or xq are empty.
+    :raises ValueError: when x or xq are empty.
 
     """
     if is_sorted:

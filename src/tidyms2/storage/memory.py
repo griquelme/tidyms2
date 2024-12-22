@@ -179,7 +179,7 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
 
         :param sample_id: If provided, only fetch annotations from this sample. By default, fetch annotations
             from all samples.
-        :raise SampleNotFound: if a sample id that is not in the assay storage is provided.
+        :raises SampleNotFound: if a sample id that is not in the assay storage is provided.
 
         """
         if sample_id is not None and not self.has_sample(sample_id):
@@ -196,8 +196,8 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
             from all samples
         :param descriptors: If provided only fetch values from these descriptors. By default, all descriptors
             are fetched.
-        :raise SampleNotFound: if a sample id that is not in the assay storage is provided.
-        :raise InvalidFeatureDescriptor: If an undefined descriptor name for the assay feature type is provided.
+        :raises SampleNotFound: if a sample id that is not in the assay storage is provided.
+        :raises InvalidFeatureDescriptor: If an undefined descriptor name for the assay feature type is provided.
         """
         if sample_id is not None and not self.has_sample(sample_id):
             raise exceptions.SampleNotFound(sample_id)
