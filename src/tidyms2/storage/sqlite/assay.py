@@ -251,7 +251,7 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
         """Retrieve a sample from the assay.
 
         :param sample_id: the id of the sample to retrieve
-        :raise SampleNotFound: if the provided id is not found in the DB
+        :raises SampleNotFound: if the provided id is not found in the DB
 
         """
         with create_session(self.session_factory) as session:
