@@ -137,19 +137,14 @@ def _get_next_mz_search_interval(
 
 def _make_exact_mass_difference_bounds(elements: list[Element], min_p: float) -> dict[int, tuple[float, float]]:
     """Compute possible mass differences obtaining from changing one isotope."""
-    bounds = dict()
+    dm_to_dM_list: dict[int, list[float]] = dict()
     for e in elements:
-        m, M, p = e.get_abundances()
-        for i in range(1, len(M)):
-            if p[i] > min_p:
-                dm = m[i] - m[0]
-                dM = M[i] - M[0]
-                dM_list = bounds.get(dm)
-                if dM_list is None:
-                    bounds[dm] = [dM]
-                else:
-                    dM_list.append(dM)
+        for isotope in e.isotopes:
+            if isotope == e.mmi or isotope.p < min_p:
+                continue
+            dm = isotope.a - e.mmi.a
+            dM = isotope.m - e.mmi.m
+            dM_list = dm_to_dM_list.setdefault(dm, list())
+            dM_list.append(dM)
 
-    for dm in bounds:
-        bounds[dm] = min(bounds[dm]), max(bounds[dm])
-    return bounds
+    return {k: (min(v), max(v)) for k, v in dm_to_dM_list.items()}
