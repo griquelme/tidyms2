@@ -266,15 +266,14 @@ def _get_n_atoms_envelope(element: Element, n: int, max_length: int) -> Envelope
     aux function to _get_n_atoms_envelope.
 
     """
-    m_element, M_element, p_element = element.get_abundances()
-    n_isotopes = len(p_element)
+    n_isotopes = len(element.isotopes)
     # find combinations of isotopes that sum n
     combinations = _find_n_isotope_combination(n_isotopes, n)
 
     # find m, M and p for each combination of isotopes
-    multinomial_dist = multinomial(n, p_element)
-    m = np.matmul(combinations, m_element)
-    M = np.matmul(combinations, M_element)
+    multinomial_dist = multinomial(n, [x.p for x in element.isotopes])
+    m = np.matmul(combinations, [x.a for x in element.isotopes])
+    M = np.matmul(combinations, [x.m for x in element.isotopes])
     p = multinomial_dist.pmf(combinations)
 
     # sort by exact mass

@@ -42,9 +42,8 @@ class TestEnvelopeFinderComponents:
         bounds = ef._make_exact_mass_difference_bounds(elements, 0.0)
         # m and M are the bounds for each nominal mass increment
         for e in elements:
-            m, M, _ = e.get_abundances()
-            m = [mi - m[0] for mi in m]
-            M = [Mi - M[0] for Mi in M]
+            m = [i.a - e.mmi.a for i in e.isotopes]
+            M = [i.m - e.mmi.m for i in e.isotopes]
             for i, mi in zip(m[1:], M[1:]):
                 m_min, m_max = bounds[i]
                 assert m_min <= mi

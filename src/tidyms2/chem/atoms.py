@@ -83,14 +83,6 @@ class Element(pydantic.BaseModel, frozen=True):
             raise IsotopeError("All isotopes in an element must have the same atomic number.")
         return data
 
-    def get_abundances(self) -> tuple[list[int], list[float], list[float]]:
-        """Fetch the Mass number, exact mass and abundance of each Isotope."""
-        isotopes = list(self.isotopes)
-        m = [x.a for x in isotopes]
-        M = [x.m for x in isotopes]
-        p = [x.p for x in isotopes]
-        return m, M, p
-
     @pydantic.computed_field(repr=False)
     @cached_property
     def mmi(self) -> Isotope:

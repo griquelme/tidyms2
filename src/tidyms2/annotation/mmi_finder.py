@@ -174,24 +174,35 @@ def _create_envelope_arrays(config: AnnotatorParameters, context: ChemicalContex
 
 
 def _select_two_isotope_element(elements: list[Element], dm: int) -> list[Element]:
-    selected_elements = list()
-    p_dm_max = 0
+    """Select elements from the list with two isotopes.
+
+    All elements where the abundance of the MMI is lower than the other isotope are kept.
+    In cases where the MMI is greater than the other isotope, only the isotope with
+    the minimum abundance from this subset is kept.
+
+    """
+    selected: list[Element] = list()
+    max_p1_where_p0_gt_p1 = 0.0  # maximum value of two element isotopes p0 where p0 > p1
     best_p0_greater_than_p1 = None
     for element in elements:
-        n_isotopes = len(element.isotopes)
-        m, _, p = element.get_abundances()
-        if n_isotopes == 2:
-            element_dm = m[-1] - m[0]
-            if element_dm == dm:
-                p0, pi = p
-                if pi > p0:
-                    selected_elements.append(element)
-                elif pi > p_dm_max:
-                    p_dm_max = pi
-                    best_p0_greater_than_p1 = element
+        if len(element.isotopes) != 2:
+            continue
+
+        other = element.isotopes[1]
+
+        element_dm = other.a - element.mmi.a
+        if element_dm != dm:
+            continue
+
+        if other.p >= element.mmi.p:
+            selected.append(element)
+        elif other.p > max_p1_where_p0_gt_p1:
+            max_p1_where_p0_gt_p1 = other.p
+            best_p0_greater_than_p1 = element
+
     if best_p0_greater_than_p1 is not None:
-        selected_elements.append(best_p0_greater_than_p1)
-    return selected_elements
+        selected.append(best_p0_greater_than_p1)
+    return selected
 
 
 def _select_multiple_isotope_elements(e_list: list[Element]) -> list[Element]:

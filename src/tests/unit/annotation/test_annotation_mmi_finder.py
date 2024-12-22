@@ -134,8 +134,8 @@ def sample(tmp_path_factory) -> Sample:
 def test__find_candidates(config, rules, sample):
     # create an m/z and sp list where the monoisotopic m/z is the M1 in the isotopic envelope.
 
-    _, M_cl, _ = PTABLE.get_element("Cl").get_abundances()
-    dm_cl = M_cl[1] - M_cl[0]
+    cl = PTABLE.get_element("Cl")
+    dm_cl = cl.isotopes[1].a - cl.mmi.a
     mono_mz = 400.0
     charge = 1
     mono_index = 3
@@ -159,8 +159,8 @@ def test__find_candidates(config, rules, sample):
 def test__find_candidates_multiple_candidates(config, rules, sample):
     # create an m/z and sp list where the monoisotopic m/z is the M1 in the
     # isotopic envelope.
-    _, M_cl, _ = PTABLE.get_element("Cl").get_abundances()
-    dm_cl = M_cl[1] - M_cl[0]
+    cl = PTABLE.get_element("Cl")
+    dm_cl = cl.isotopes[1].a - cl.mmi.a
     mono_mz = 400.0
     charge = 1
     mono_index = 4
@@ -184,7 +184,6 @@ def test__find_candidates_multiple_candidates(config, rules, sample):
 
 def test__find_candidates_no_candidates(config, rules, sample):
     # create an m/z and sp list where the monoisotopic m/z is the M1 in the isotopic envelope.
-    _, M_cl, _ = PTABLE.get_element("Cl").get_abundances()
     mono_mz = 400.0
     charge = 1
     mono_index = 2
@@ -206,8 +205,8 @@ def test__find_candidates_no_candidates(config, rules, sample):
 def test_MMIFinder(config, sample):
     finder = mmi_finder.MMIFinder(config, BIN_SIZE, DEFAULT_CONTEXT)
 
-    _, M_cl, _ = PTABLE.get_element("Cl").get_abundances()
-    dm_cl = M_cl[1] - M_cl[0]
+    cl = PTABLE.get_element("Cl")
+    dm_cl = cl.isotopes[1].a - cl.mmi.a
     mono_mz = 400.0
     mz = [100.0, 300.0, mono_mz - dm_cl, mono_mz, 456.0]
     sp = [100.0, 200.0, 500.0, 501.0, 34.0]
