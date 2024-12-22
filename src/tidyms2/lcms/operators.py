@@ -75,7 +75,7 @@ class LCTraceExtractor(RoiExtractor[MZTrace, Peak], MakeRoiParameters):
 class LCTraceBaselineEstimator(RoiTransformer[MZTrace, Peak]):
     """Estimate the noise level and baseline in an m/z trace.
 
-    The default values for this filter usually produce good results in all LC
+    The default values for this filter usually produce good results in most LC
     traces. Do not modify these values unless you know what you are doing.
     See :ref:`here <peak-picking>` for a description of the noise estimation
     and baseline estimation algorithms.
@@ -107,7 +107,7 @@ class LCTraceBaselineEstimator(RoiTransformer[MZTrace, Peak]):
     def transform_roi(self, roi: MZTrace):
         """Add noise and baseline to an LC trace."""
         roi.noise = estimate_noise(
-            roi.spint, min_slice_size=self.min_slice_size, n_slices=self.n_slices, robust=self.robust
+            roi.spint, min_chunk_size=self.min_slice_size, n_chunks=self.n_slices, robust=self.robust
         )
         if self.smoothing_strength is not None:
             roi.spint = smooth(roi.spint, self.smoothing_strength)

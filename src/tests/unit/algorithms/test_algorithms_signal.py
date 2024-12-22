@@ -50,21 +50,21 @@ class TestEstimateNoise:
 
     def test_noise_estimation_size(self, noise):
         n_slices = 2
-        actual = signal.estimate_noise(noise, n_slices=n_slices)
+        actual = signal.estimate_noise(noise, n_chunks=n_slices)
         assert np.all(actual >= 0.0)
         assert np.unique(actual).size == n_slices
         assert noise.size == actual.size
 
     def test_estimate_noise_number_of_unique_values_in_estimation(self, noise):
         n_slices = 2
-        actual = signal.estimate_noise(noise, n_slices=n_slices)
+        actual = signal.estimate_noise(noise, n_chunks=n_slices)
         assert np.all(actual >= 0.0)
         assert np.unique(actual).size == n_slices
 
     def test_min_slice_size_has_higher_priority_than_n_slices_to_set_slice_size(self, noise):
         n_slices = 5
         min_slice_size = 150
-        noise_estimation = signal.estimate_noise(noise, n_slices=n_slices, min_slice_size=min_slice_size)
+        noise_estimation = signal.estimate_noise(noise, n_chunks=n_slices, min_chunk_size=min_slice_size)
         # noise has a size of 500, the slice is going to be 100 < 150 check that
         # 150 is used instead. There should be three unique values
         actual_n_slices = np.unique(noise_estimation).size
