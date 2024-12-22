@@ -11,40 +11,39 @@ from ..utils.numpy import FloatArray1D, IntArray1D
 
 
 def detect_peaks(
-    x: np.ndarray, noise: np.ndarray, baseline: np.ndarray, find_peaks_params: dict | None = None
+    x: np.ndarray, noise: np.ndarray, baseline: np.ndarray, **kwargs
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     r"""Find peaks in a 1D signal.
 
     :param x: 1D array.
-    :param noise: the noise level at each point in `x`. MUST have the same size as `x`.
-    :param baseline: the baseline level at each point in `x`. MUST have the same size as `x`.
-    :param find_peaks_params: extra parameters to pass to :py:func:`scipy.signal.find_peaks`.
-    :return: a tuple consisting of: an int array that with the peak start position, an int array
-        with the apex of each peak and an array with the peak end position.
+    :param noise: the noise level at each point in `x`. **MUST** have the same size as `x`.
+    :param baseline: the baseline level at each point in `x`. **MUST** have the same size as `x`.
+    :param kwargs: extra parameters to pass to :py:func:`scipy.signal.find_peaks`. If the `prominence`
+        parameter is passed, it will be ignored and set to three times the noise level.
+    :return: a tuple consisting of: an int array with peaks start location, an int array
+        with the apexes location and an int array with the peaks end location.
 
-    Notes
-    -----
-    The peak detection process work in the following way:
+    Algorithm
+    ---------
 
     1.  Peak apexes are detected using :py:func:`scipy.signal.find_peaks` with a minimum
         distance of three points and a minimum prominence equal to three times the noise level.
-    2.  all points in :math:`x` are classified into signal or baseline. A point is considered
-        baseline if the following condition is meet:
+    2.  points in :math:`x` are classified as either signal or baseline. The k-th point in :math:`x` is
+        classified as baseline if the following condition is met:
 
         .. math::
             |x[k] - b[k]| < e[k]
 
-        where :math:`k` is an index, :math:`b` is the baseline and :math:`e` is the noise.
+        where :math:`b` is the baseline and :math:`e` is the noise.
     3.  Peaks are removed if they fall in a in a region classified as baseline.
-    4.  Peaks beginning and end are found by finding the closest baseline point to their left and right.
-        The region comprehended between a peak start and end is defined as the peak extension.
-    5.  If there are overlapping peaks (i.e. peak with overlapping extensions), the extension of these
-        peaks is fixed by defining a boundary between the peaks as the minimum value between the two peaks.
+    4.  Peak extensions, i.e., beginning and end, are defined as the closest baseline point to
+        the left and right of each apex.
+    5.  Overlapping peak extensions are fixed by setting the boundary between the peaks to the minimum
+        value between the two apexes.
 
-    See Also
-    --------
-    estimate_noise : estimates noise in a 1D signal
-    estimate_baseline : estimates the baseline in a 1D signal
+    .. seealso::
+        - :py:func:`estimate_noise`: Estimate the noise level in a 1D signal.
+        - :py:func:`estimate_baseline`: Estimate the baseline in a 1D signal.
 
     """
     baseline_index = np.where((x - baseline) < noise)[0]
@@ -53,48 +52,48 @@ def detect_peaks(
 
     prominence = 3 * noise
 
-    if find_peaks_params is None:
-        find_peaks_params = {"prominence": prominence, "distance": 3}
+    if kwargs:
+        kwargs["prominence"] = prominence
     else:
-        find_peaks_params["prominence"] = prominence
+        kwargs.update({"prominence": prominence, "distance": 3})
 
-    peaks = find_peaks(x, **find_peaks_params)[0]
-    # remove peaks close to baseline level
+    peaks = find_peaks(x, **kwargs)[0]
+
     peaks = np.setdiff1d(peaks, baseline_index, assume_unique=True)
 
     start, end = _find_peak_extension(peaks, baseline_index)
-    start, end = _fix_peak_overlap(x, start, peaks, end)
+    start, end = _fix_peak_extension_overlap(x, start, peaks, end)
     start, peaks, end = _normalize_peaks(x, start, peaks, end)
     return start, peaks, end
 
 
-def estimate_noise(x: FloatArray1D, min_slice_size: int = 200, n_slices: int = 5, robust: bool = True) -> np.ndarray:
+def estimate_noise(x: FloatArray1D, n_chunks: int = 5, robust: bool = True, min_chunk_size: int = 200) -> np.ndarray:
     """Estimate the noise level in a 1D signal.
 
-    `x` is split into chunks and a noise estimation is done assuming a gaussian
+    `x` is split into equally sized chunks and a noise estimation is done assuming a gaussian
     iid in each chunk. See [ADD LINK] for a detailed description of how the method
     works.
 
     :param x: a 1D array
-    :param min_slice_size: minimum size of a slice. If the size of x is smaller than this value,
-        the noise is estimated using the whole array.
-    :param n_slices: number of slices to create. The size of each slice must be greater than
-        `min_slice_size`.
+    :param n_chunks: number of chunks to create. The size of each slice must be greater than
+        `min_chunk_size`.
     :param robust: if set to ``True``, estimates the noise using the median absolute deviation. Otherwise,
         noise estimation uses the standard deviation.
+    :param min_slice_size: minimum size of a slice. If the size of x is smaller than this value,
+        the noise is estimated using the whole array.
     :return: an array that contains the noise level at each point in `x`.
 
     """
     noise = np.zeros_like(x)
-    slice_size = x.size // n_slices
-    if slice_size < min_slice_size:
-        slice_size = min_slice_size
+    slice_size = x.size // n_chunks
+    if slice_size < min_chunk_size:
+        slice_size = min_chunk_size
     start = 0
     while start < x.size:
         end = min(start + slice_size, x.size)
 
         # prevent short slices at the end of x
-        if (x.size - end) < min_slice_size:
+        if (x.size - end) < min_chunk_size:
             end = x.size
 
         slice_noise = _estimate_local_noise(x[start:end], robust=robust)
@@ -104,16 +103,22 @@ def estimate_noise(x: FloatArray1D, min_slice_size: int = 200, n_slices: int = 5
 
 
 def estimate_baseline(x: np.ndarray, noise: np.ndarray, min_proba: float = 0.05) -> np.ndarray:
-    """Compute the baseline of a 1D signal.
+    """Estimate the baseline level of a 1D signal.
+
+    :param x: non-empty 1D array
+    :param noise: the noise level at each point in `x`. **MUST** have the same size as `x`.
+    :param min_proba: number between 0 and 1, default=0.05
+    :return: an array that contains the baseline level at each point in `x`.
+
+    Algorithm
+    ---------
 
     The baseline is estimated by classifying each point in the signal as either
     signal or baseline. The baseline is obtained by interpolation of baseline
     points. See [ADD LINK] for a detailed explanation of how the method works.
 
-    :param x: non-empty 1D array
-    :param noise: noise estimation obtained with ``estimate_noise``
-    :param min_proba: number between 0 and 1, default=0.05
-    :return: an array that contains the baseline level at each point in `x`.
+    .. seealso::
+        - :py:func:`estimate_noise`: Estimate the noise level in a 1D signal.
 
     """
     # find points that only have contribution from the baseline
@@ -159,7 +164,7 @@ def find_centroids(
     peaks = peaks[((spint[peaks] - baseline[peaks]) / noise[peaks]) > min_snr]
 
     start, end = _find_peak_extension(peaks, baseline_index)
-    start, end = _fix_peak_overlap(spint, start, peaks, end)
+    start, end = _fix_peak_extension_overlap(spint, start, peaks, end)
     start, peaks, end = _normalize_peaks(spint, start, peaks, end)
 
     # peak centroid and total intensity computation
@@ -218,13 +223,9 @@ def _find_peak_extension(peaks: IntArray1D, baseline_index: IntArray1D) -> tuple
     return start, end
 
 
-def _fix_peak_overlap(
+def _fix_peak_extension_overlap(
     y: np.ndarray, start: np.ndarray, peaks: np.ndarray, end: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Fix boundaries of overlapping peaks.
-
-    aux function of detect_peaks
-    """
     local_min = find_peaks(-y)[0]
     # find overlapping peaks indices
     overlap_mask = end > np.roll(start, -1)
@@ -260,7 +261,6 @@ def _normalize_peaks(
     fixed_peaks = np.zeros_like(peaks)
     valid_peaks = np.zeros(peaks.size, dtype=bool)
     for k in range(peaks.size):
-        # search local min in the region defined by the overlapping peaks
         local_max_slice = y[local_max[start_index[k] : end_index[k]]]
         if local_max_slice.size > 0:
             k_max = np.argmax(local_max_slice)
@@ -274,9 +274,7 @@ def _normalize_peaks(
 
 
 def _estimate_local_noise(x: FloatArray1D, robust: bool = True) -> float:
-    r"""Estimate noise in a 1D signal. Assumes that the noise is gaussian iid.
-
-    aux function of estimate_noise
+    r"""Estimate noise in a 1D signal assuming that the noise is gaussian iid.
 
     :param x: 1D array with a length greater or equal than four.If the size is smaller, the
         function will return 0.
@@ -298,30 +296,24 @@ def _estimate_local_noise(x: FloatArray1D, robust: bool = True) -> float:
     # sizes at 20, 30, ..., 90 percentiles
     # sizes must be > 2 to compute the standard deviation
     chunk_sizes = [d2x.size * percentile // 100 for percentile in reversed(range(20, 100, 10))]
-    chunk_sizes = [x for x in chunk_sizes if x > 2]
 
     for size in chunk_sizes:
-        noise_std = _compute_noise_std(d2x[:size], robust)
+        if size <= 2:
+            break
 
-        # if all the values in d2x are equal, noise_std is equal to zero
+        noise_std: float = mad(d2x[:size], scale="normal") if robust else np.std(d2x[:size]).item()  # type: ignore
+
+        # if all the values in d2x are equal, the noise level is zero
         if noise_std == 0.0:
             return 0.0
 
-        noise_mean = _compute_noise_mean(d2x[:size], robust)
+        noise_mean = np.median(d2x[:size]).item() if robust else np.mean(d2x[:size]).item()
 
         if abs(noise_mean / noise_std) <= 1.0:
             return noise_std / 2
 
     # if there are no chunk with sizes greater than 2, fall back to zero
     return 0.0
-
-
-def _compute_noise_mean(x: FloatArray1D, robust: bool) -> float:
-    return np.median(x).item() if robust else np.mean(x).item()
-
-
-def _compute_noise_std(x: FloatArray1D, robust: bool) -> float:
-    return mad(x, scale="normal") if robust else np.std(x).item()  # type: ignore
 
 
 def _find_baseline_points(x: np.ndarray, noise: np.ndarray, min_proba: float) -> np.ndarray:
