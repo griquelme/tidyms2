@@ -42,7 +42,7 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 119
 lint.select = ["F", "W", "E", "I", "D"]
-lint.ignore = ["D105", "D107", "D203", "D213"]
+lint.ignore = ["D102", "D105", "D107", "D203", "D213"]
 exclude = ["docs/"]
 
 [tool.ruff.lint.extend-per-file-ignores]
