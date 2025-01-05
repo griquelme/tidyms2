@@ -59,3 +59,15 @@ class InvalidSeparationMode(ValueError):
 
 class SampleProcessorError(ValueError):
     """Exception raised when a sample processor fails to process a sample."""
+
+
+class RepeatedSampleOrder(ValueError):
+    """Exception raised when multiple samples have the same order."""
+
+
+class EmptyDataMatrix(ValueError):
+    """Exception raised when an empty data matrix is created or a transformation results in an empty matrix."""
+
+
+class SampleMetadataNotFound(ValueError):
+    """Exception raises when a sample does not contain required metadata."""
