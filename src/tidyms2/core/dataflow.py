@@ -86,10 +86,13 @@ class DataMatrixProcessStatus(BaseProcessStatus):
 
     """
 
-    type: Literal[OperatorType.ASSAY] = OperatorType.ASSAY
+    type: Literal[OperatorType.MATRIX] = OperatorType.MATRIX
 
     normalized: bool = False
-    """Flags if ROI were extracted."""
+    """Flags if Sample values are normalized."""
+
+    missing_imputed: bool = False
+    """Flag if the matrix contain missing values."""
 
 
 ProcessType = TypeVar("ProcessType", SampleProcessStatus, AssayProcessStatus, DataMatrixProcessStatus)

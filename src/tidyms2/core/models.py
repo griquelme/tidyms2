@@ -62,7 +62,7 @@ class Sample(pydantic.BaseModel):
     batch: pydantic.NonNegativeInt = pydantic.Field(default=0, repr=False)
     """the sample analytical batch number in an assay."""
 
-    extra: dict[str, Any] | None = pydantic.Field(default=None, repr=False)
+    extra: dict[str, Any] = pydantic.Field(default=dict(), repr=False)
     """extra sample information"""
 
     @pydantic.field_serializer("path")
@@ -313,7 +313,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
 class FeatureGroup(pydantic.BaseModel):
     """Store feature group information."""
 
-    group: int
+    group: int = -1
     """the the group id"""
 
     annotation: GroupAnnotation
@@ -321,6 +321,12 @@ class FeatureGroup(pydantic.BaseModel):
 
     descriptors: dict[str, float]
     """Aggregated feature descriptors."""
+
+    @pydantic.computed_field(repr=False)
+    @cached_property
+    def mz(self) -> float:
+        """The feature m/z."""
+        return self.descriptors["mz"]
 
 
 class AnnotableFeature(Feature[RoiType], ABC):
@@ -358,7 +364,7 @@ class AnnotableFeature(Feature[RoiType], ABC):
 class GroupAnnotation(pydantic.BaseModel):
     """Store annotation of a :term:`feature group`."""
 
-    model_config = pydantic.ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+    model_config = pydantic.ConfigDict(validate_assignment=True)
 
     label: int
     """The feature group label. Identifies features across samples that are originated from the
