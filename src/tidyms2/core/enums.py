@@ -16,14 +16,6 @@ class OperatorType(str, enum.Enum):
     """Apply operations on data matrix."""
 
 
-class DataType(str, enum.Enum):
-    """Data types that processors operates on."""
-
-    SAMPLE = "sample"
-    ASSAY = "assay"
-    MATRIX = "matrix"
-
-
 class SeparationMode(str, enum.Enum):
     """Analytical method separation platform."""
 
@@ -51,12 +43,3 @@ class MSDataMode(str, enum.Enum):
 
     PROFILE = "profile"
     CENTROID = "centroid"
-
-
-class IDFeatureDescriptors(str, enum.Enum):
-    """ID related Feature descriptors added to a feature table."""
-
-    ID = "id"
-    ROI_ID = "roi_id"
-    SAMPLE_ID = "sample_id"
-    FEATURE_GROUP = "group"
