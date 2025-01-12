@@ -30,6 +30,7 @@ from .models import (
     DescriptorModel,
     DescriptorPatchModel,
     FeatureModel,
+    FillValueModel,
     RoiModel,
     SampleModel,
     SampleSnapshotModel,
@@ -80,7 +81,17 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
 
     def add_fill_values(self, *fill_values: FillValue) -> None:
         """Add values to fill missing entries in the data matrix."""
-        raise NotImplementedError
+        table = self._fetch_feature_table()
+        d = dict()
+        for fill in fill_values:
+            sample_d = d.setdefault(fill.sample_id, dict())
+            sample_d[fill.feature_group] = fill.value
+        table.add_fill_values(d)
+
+        snapshot_id = self.get_snapshot_id()
+
+        with create_session(self.session_factory) as session:
+            session.add_all(FillValueModel.from_fill_value(x, snapshot_id) for x in fill_values)
 
     def add_sample_data(self, data: SampleStorage[RoiType, FeatureType]) -> None:
         """Add sample data to DB."""
@@ -115,6 +126,13 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
                 .values(snapshot_id=snapshot_id)
             )
             session.execute(descriptor_update)
+
+            fill_value_update = (
+                update(FillValueModel)
+                .where(FillValueModel.snapshot_id == LATEST_SNAPSHOT)
+                .values(snapshot_id=snapshot_id)
+            )
+            session.execute(fill_value_update)
 
     def fetch_annotations(self, sample_id: str | None = None) -> list[Annotation]:
         """Fetch the feature annotations."""
@@ -180,7 +198,8 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
 
     def fetch_fill_values(self) -> dict[str, dict[int, float]]:
         """Fetch fill values for data matrix."""
-        raise NotImplementedError
+        table = self._fetch_feature_table()
+        return table.fetch_fill_values(copy=True)
 
     def fetch_rois_by_id(self, *roi_ids: UUID) -> list[RoiType]:
         """Fetch ROIs using their ids.
@@ -366,7 +385,6 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
         if snapshot_id == self._current_snapshot_id and not reset:
             return
 
-        self._check_current_snapshot_is_latest_snapshot()
         stmt = select(AssaySnapshotStatusModel).where(AssaySnapshotStatusModel.id == snapshot_id)
         with create_session(self.session_factory) as session:
             model = session.execute(stmt).scalar()
@@ -510,8 +528,10 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
             annotations = self._fetch_annotations(session, LATEST_SNAPSHOT)
             ann_patches = self._fetch_annotations_patches(session)
             descriptor_patches = self._fetch_descriptor_patches(session)
+            fill_values = self._fetch_fill_values(session)
         self._table = FeatureTable()
         self._table.add_descriptors(descriptors, annotations)
+        self._table.add_fill_values(fill_values)
         for patches in ann_patches:
             self._table.patch_annotation(*patches)
         for patches in descriptor_patches:
@@ -555,6 +575,21 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
             snapshot_patches.append(DescriptorPatch(id=p.feature_id, descriptor=p.descriptor, value=p.value))
 
         return [patches.get(x, list()) for x in fetch_snapshots]
+
+    def _fetch_fill_values(self, session: Session) -> dict[str, dict[int, float]]:
+        current_snapshot = self.get_snapshot_id()
+        all_snapshots = self._list_snapshots(session)
+        current_index = all_snapshots.index(current_snapshot)
+        fetch_snapshots = all_snapshots[: current_index + 1]
+
+        stmt = select(FillValueModel).where(FillValueModel.snapshot_id.in_(fetch_snapshots))
+
+        fill_values = dict()
+        for fill in session.execute(stmt).scalars():
+            sample_fills = fill_values.setdefault(fill.sample_id, dict())
+            sample_fills.setdefault(fill.feature_group, 0.0)
+            sample_fills[fill.feature_group] += fill.value
+        return fill_values
 
     def _fetch_current_status(self, session: Session) -> AssaySnapshotStatusModel:
         stmt = select(AssaySnapshotStatusModel).where(AssaySnapshotStatusModel.id == self._current_snapshot_id)

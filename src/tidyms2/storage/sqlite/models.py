@@ -10,7 +10,7 @@ from sqlalchemy import Float, Integer, String
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 
 from ...core.dataflow import AssayProcessStatus
-from ...core.models import Annotation, AnnotationPatch, DescriptorPatch, Feature, Roi, Sample
+from ...core.models import Annotation, AnnotationPatch, DescriptorPatch, Feature, FillValue, Roi, Sample
 
 Base = declarative_base()
 
@@ -238,3 +238,26 @@ class DescriptorPatchModel(BaseOrmModel):
         return DescriptorPatchModel(
             feature_id=patch.id, descriptor=patch.descriptor, value=patch.value, snapshot_id=snapshot
         )
+
+
+class FillValueModel(BaseOrmModel):
+    """Store patches applied to annotation data."""
+
+    __tablename__ = "fill_values"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    feature_group: Mapped[int] = mapped_column(nullable=False)
+    sample_id: Mapped[str] = mapped_column(String, nullable=False)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    snapshot_id: Mapped[str] = mapped_column(String, nullable=False)
+
+    @classmethod
+    def from_fill_value(cls, fill: FillValue, snapshot: str) -> FillValueModel:
+        """Create a new instance from an annotation patch."""
+        return FillValueModel(
+            feature_group=fill.feature_group, sample_id=fill.sample_id, value=fill.value, snapshot_id=snapshot
+        )
+
+    def to_fill_value(self) -> FillValue:
+        """Create a fill value pydantic model from the current instance."""
+        return FillValue(sample_id=self.sample_id, feature_group=self.feature_group, value=self.value)
