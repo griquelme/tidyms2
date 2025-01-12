@@ -291,12 +291,17 @@ class MissingImputer(AssayOperator):
         return AssayProcessStatus(missing_imputed=True)
 
     def _apply_operator(self, data: AssayStorage) -> None:
-        fill_values = self.add_fill_values(data)
+        fill_values = self.compute_fill_values(data)
         data.add_fill_values(*fill_values)
 
     @abstractmethod
-    def add_fill_values(self, data: AssayStorage) -> list[FillValue]:
-        """Compute feature descriptor patches."""
+    def compute_fill_values(self, data: AssayStorage) -> list[FillValue]:
+        """Compute fill values in a sample.
+
+        :param sample: the sample to search missing values
+        :param groups: the feature groups where the sample did not contribute a feature.
+
+        """
         ...
 
 

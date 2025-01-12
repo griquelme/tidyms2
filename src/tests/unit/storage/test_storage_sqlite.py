@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 
 from tidyms2.core import exceptions
 from tidyms2.core.dataflow import AssayProcessStatus
-from tidyms2.core.models import AnnotationPatch, DescriptorPatch
+from tidyms2.core.models import AnnotationPatch, DescriptorPatch, FillValue
 from tidyms2.storage import sqlite
 from tidyms2.storage.memory import OnMemorySampleStorage
 from tidyms2.storage.sqlite.assay import LATEST_SNAPSHOT
@@ -388,3 +388,54 @@ class TestSQLiteAssayStorageDescriptorApi(AssayStorageFixtures):
         annotations_from_snapshot = assay.fetch_descriptors()
         assert descriptors_before_patch != descriptors_after_patch
         assert descriptors_after_patch == annotations_from_snapshot
+
+
+class TestOnMemoryAssayStorageFillValueApi(AssayStorageFixtures):
+    def test_fetch_fill_values_no_values_return_empty_dict(self, assay):
+        fill_values = assay.fetch_fill_values()
+        assert isinstance(fill_values, dict)
+        assert not fill_values
+
+    def test_fetch_add_values_and_fetch_return_same_fill_values(self):
+        assay = sqlite.SQLiteAssayStorage("assay", None, ConcreteRoi, ConcreteFeature)
+        val1 = FillValue(sample_id="sample1", feature_group=0, value=10.0)
+        val2 = FillValue(sample_id="sample2", feature_group=1, value=5.0)
+        assay.add_fill_values(val1, val2)
+        actual = assay.fetch_fill_values()
+        assert actual[val1.sample_id][val1.feature_group] == val1.value
+        assert actual[val2.sample_id][val2.feature_group] == val2.value
+
+    def test_fetch_fill_values_return_a_copy(self):
+        assay = sqlite.SQLiteAssayStorage("assay", None, ConcreteRoi, ConcreteFeature)
+        original = 10.0
+        modified = 100.0
+        val1 = FillValue(sample_id="sample1", feature_group=0, value=original)
+        assay.add_fill_values(val1)
+        fill_values_copy1 = assay.fetch_fill_values()
+        fill_values_copy1[val1.sample_id][val1.feature_group] = modified
+        fill_values_copy2 = assay.fetch_fill_values()
+        assert fill_values_copy2[val1.sample_id][val1.feature_group] == original
+        assert fill_values_copy1 is not fill_values_copy2
+
+    def test_snapshots_maintain_independent_fill_values_copies(self):
+        assay = sqlite.SQLiteAssayStorage("assay", None, ConcreteRoi, ConcreteFeature)
+        # add fill values and create a snapshot
+        val1 = FillValue(sample_id="sample1", feature_group=0, value=10.0)
+        assay.add_fill_values(val1)
+        snapshot_id = "snapshot"
+        assay.create_snapshot(snapshot_id)
+
+        # add more fill values and set previous snapshot
+        val2 = FillValue(sample_id="sample2", feature_group=1, value=5.0)
+        assay.add_fill_values(val2)
+        assay.set_snapshot(snapshot_id)
+
+        snapshot_fill_values = assay.fetch_fill_values()
+        assert snapshot_fill_values[val1.sample_id][val1.feature_group] == val1.value
+        assert val2.sample_id not in snapshot_fill_values
+
+        # go back to latest status and check that value 2 is stored
+        assay.set_snapshot()
+        latest_fill_values = assay.fetch_fill_values()
+        assert latest_fill_values[val1.sample_id][val1.feature_group] == val1.value
+        assert latest_fill_values[val2.sample_id][val2.feature_group] == val2.value

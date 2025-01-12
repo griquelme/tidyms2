@@ -67,6 +67,7 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
 
         self._rois_to_sample_id.update(new_rois)
         self._sample_data[sample.id] = copy
+        self._groups = list()
 
     def add_fill_values(self, *fill_values: FillValue) -> None:
         """Add values to fill missing data matrix entries."""
@@ -78,11 +79,11 @@ class OnMemoryAssayStorage(Generic[RoiType, FeatureType]):
 
     def add_feature_groups(self, *feature_groups: FeatureGroup) -> None:
         """Add feature groups to the assay."""
-        raise NotImplementedError
+        self._current.add_feature_groups(*feature_groups)
 
     def fetch_feature_groups(self) -> list[FeatureGroup]:
         """Fetch feature groups from the assay."""
-        raise NotImplementedError
+        return self._current.fetch_feature_groups()
 
     def create_snapshot(self, snapshot_id) -> None:
         """Create a new sample data snapshot.
