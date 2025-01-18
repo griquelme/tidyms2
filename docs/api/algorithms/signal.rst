@@ -1,4 +1,4 @@
-.. _raw-data-algorithms:
+.. _signal-algorithms:
 
 Signal processing algorithms
 ============================
