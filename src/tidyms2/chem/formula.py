@@ -163,7 +163,7 @@ class Formula:
             self.composition, self.context.envelope_cache, self.context.table, n, min_p=min_p
         )
         M = envelope.M - EM * self.charge
-        return IsotopicEnvelope(mz=M.tolist(), p=envelope.p.tolist())
+        return IsotopicEnvelope(mz=M.tolist(), p=envelope.p.tolist())  # type: ignore
 
     def __repr__(self):
         return "Formula({})".format(str(self))
