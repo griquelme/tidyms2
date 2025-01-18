@@ -5,7 +5,6 @@ LC-MS
 
 ..   automodule:: tidyms2.lcms
      :members:
-          MZTrace,
           Peak,
           create_lcms_assay,
           LCFeatureMatcher,
