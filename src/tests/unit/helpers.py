@@ -10,10 +10,13 @@ from pydantic import Field, computed_field
 from typing_extensions import Self
 
 from tidyms2.chem import Formula
-from tidyms2.core import models, operators
+from tidyms2.core import models
 from tidyms2.core.enums import MSInstrument, Polarity, SeparationMode
 from tidyms2.core.models import AnnotableFeature, IsotopicEnvelope, Roi, Sample
+from tidyms2.core.operators.assay import AnnotationPatcher, DescriptorPatcher
+from tidyms2.core.operators.sample import FeatureExtractor, FeatureTransformer, RoiExtractor, RoiTransformer
 from tidyms2.core.registry import operator_registry
+from tidyms2.core.storage import AssayStorage
 
 
 class ConcreteRoi(Roi):
@@ -66,7 +69,7 @@ class ConcreteFeature(AnnotableFeature[ConcreteRoi]):
 
 
 @operator_registry.register()
-class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
+class DummyRoiExtractor(RoiExtractor[ConcreteRoi, ConcreteFeature]):
     n_roi: int = 3
     """The number of dummy ROI to extract."""
 
@@ -89,7 +92,7 @@ class DummyRoiExtractor(operators.RoiExtractor[ConcreteRoi, ConcreteFeature]):
 
 
 @operator_registry.register()
-class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]):
+class DummyRoiTransformer(RoiTransformer[ConcreteRoi, ConcreteFeature]):
     max_length: int = 2
     """Crop ROI length to max length. ROIs with length greater than this value are deleted."""
 
@@ -107,7 +110,7 @@ class DummyRoiTransformer(operators.RoiTransformer[ConcreteRoi, ConcreteFeature]
 
 
 @operator_registry.register()
-class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeature]):
+class DummyFeatureExtractor(FeatureExtractor[ConcreteRoi, ConcreteFeature]):
     n_features: int = 2
     """The number of features to extract from each ROI."""
 
@@ -122,7 +125,7 @@ class DummyFeatureExtractor(operators.FeatureExtractor[ConcreteRoi, ConcreteFeat
 
 
 @operator_registry.register()
-class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, ConcreteFeature]):
+class DummyFeatureTransformer(FeatureTransformer[ConcreteRoi, ConcreteFeature]):
     feature_value: int = 5
     """The value to set in feature data."""
 
@@ -140,12 +143,12 @@ class DummyFeatureTransformer(operators.FeatureTransformer[ConcreteRoi, Concrete
 
 
 @operator_registry.register()
-class DummyAnnotationPatcher(operators.AnnotationPatcher):
+class DummyAnnotationPatcher(AnnotationPatcher):
     """Set annotation group to a fixed values in all features."""
 
     group: int = 0
 
-    def compute_patches(self, data: operators.AssayStorage) -> list[models.AnnotationPatch]:
+    def compute_patches(self, data: AssayStorage) -> list[models.AnnotationPatch]:
         annotations = data.fetch_annotations()
         return [models.AnnotationPatch(id=x.id, field="group", value=0) for x in annotations]
 
@@ -163,13 +166,13 @@ class DummyAnnotationPatcher(operators.AnnotationPatcher):
 
 
 @operator_registry.register()
-class DummyDescriptorPatcher(operators.DescriptorPatcher):
+class DummyDescriptorPatcher(DescriptorPatcher):
     """Set descriptor to a fixed value in all features."""
 
     patch: float = 500.0
     descriptor: str = "custom_descriptor"
 
-    def compute_patches(self, data: operators.AssayStorage) -> list[models.DescriptorPatch]:
+    def compute_patches(self, data: AssayStorage) -> list[models.DescriptorPatch]:
         annotations = data.fetch_annotations()
         return [models.DescriptorPatch(id=x.id, descriptor=self.descriptor, value=self.patch) for x in annotations]
 

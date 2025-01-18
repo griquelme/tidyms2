@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Self
 from ..core.dataflow import SampleProcessStatus
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.models import AnnotableFeatureType, RoiType
-from ..core.operators import SampleOperator
+from ..core.operators.sample import SampleOperator
 from ..core.storage import SampleStorage
 from .annotation import AnnotatorParameters, annotate, create_annotation_tools
 

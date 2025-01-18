@@ -13,7 +13,8 @@ from ..annotation.correspondence import FeatureCorrespondenceParameters, match_f
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.exceptions import InvalidSeparationMode
 from ..core.models import AnnotationPatch, MZTrace, Sample
-from ..core.operators import AnnotationPatcher, FeatureExtractor, RoiExtractor, RoiTransformer
+from ..core.operators.assay import AnnotationPatcher
+from ..core.operators.sample import FeatureExtractor, RoiExtractor, RoiTransformer
 from ..core.storage import AssayStorage
 from ..io import MSData
 from .models import Peak
