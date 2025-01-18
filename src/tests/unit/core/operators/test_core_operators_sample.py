@@ -4,37 +4,8 @@ import pytest
 from tidyms2.core.dataflow import SampleProcessStatus
 from tidyms2.core.exceptions import PipelineConfigurationError, ProcessStatusError, RepeatedIdError
 from tidyms2.core.operators.pipeline import Pipeline
-from tidyms2.storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
 
-from .. import helpers
-from ..helpers import ConcreteFeature, ConcreteRoi
-
-
-@pytest.fixture
-def sample_storage(tmp_path) -> OnMemorySampleStorage[ConcreteRoi, ConcreteFeature]:
-    sample = helpers.create_sample(tmp_path, 1)
-    return OnMemorySampleStorage(sample, ConcreteRoi, ConcreteFeature)
-
-
-@pytest.fixture
-def sample_storage_with_rois(sample_storage):
-    roi_extractor = helpers.DummyRoiExtractor()
-    roi_extractor.apply(sample_storage)
-    return sample_storage
-
-
-@pytest.fixture
-def sample_storage_with_features(sample_storage_with_rois):
-    feature_extractor = helpers.DummyFeatureExtractor()
-    feature_extractor.apply(sample_storage_with_rois)
-    return sample_storage_with_rois
-
-
-@pytest.fixture
-def assay_storage(sample_storage_with_features):
-    assay = OnMemoryAssayStorage("assay", helpers.ConcreteRoi, helpers.ConcreteFeature)
-    assay.add_sample_data(sample_storage_with_features)
-    return assay
+from ... import helpers
 
 
 class TestRoiExtractor:
@@ -157,33 +128,6 @@ class TestFeatureTransformer:
 
         assert all(x.data_mz == op.feature_value for x in sample_storage_with_features.list_features())
         assert sample_storage_with_features.get_status().roi_extracted
-
-
-class TestAnnotationPatcher:
-    @pytest.fixture
-    def op(self):
-        return helpers.DummyAnnotationPatcher(id="dummy-id")
-
-    def test_apply_ok(self, op, assay_storage: OnMemoryAssayStorage):
-        annotations_before = assay_storage.fetch_annotations()
-        op.apply(assay_storage)
-        annotations_after = assay_storage.fetch_annotations()
-        assert annotations_before != annotations_after
-        assert all(x.group == op.group for x in annotations_after)
-
-
-class TestDescriptorPatcher:
-    @pytest.fixture
-    def op(self):
-        return helpers.DummyDescriptorPatcher(id="dummy-id")
-
-    def test_apply_ok(self, op, assay_storage: OnMemoryAssayStorage):
-        descriptor = "custom_descriptor"
-        descriptors_before = assay_storage.fetch_descriptors(descriptors=[descriptor])
-        op.apply(assay_storage)
-        descriptors_after = assay_storage.fetch_descriptors(descriptors=[descriptor])
-        assert descriptors_before != descriptors_after
-        assert all(x == op.patch for x in descriptors_after[descriptor])
 
 
 class TestPipeline:
@@ -321,7 +265,3 @@ class TestPipeline:
         pipe.apply(sample_storage)
         assert sample_storage.get_n_rois()
         assert sample_storage.get_n_features()
-
-
-class TestMatrixTransformer:
-    pass
