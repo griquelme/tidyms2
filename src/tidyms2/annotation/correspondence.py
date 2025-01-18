@@ -253,7 +253,7 @@ def _estimate_gmm_n_components(
     # keep the estimation with the highest number of species
     species = species_array.max(axis=0)
     n_species_per_cluster = dict(zip(np.arange(n_clusters), species))
-    return n_species_per_cluster
+    return n_species_per_cluster  # type: ignore
 
 
 def _estimate_n_species_one_group(
