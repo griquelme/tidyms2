@@ -1,9 +1,8 @@
-"""Data matrix interface."""
+"""Data matrix implementation."""
 
 from __future__ import annotations
 
-import concurrent.futures
-from typing import Generator, Protocol, Sequence
+from typing import Generator, Sequence
 
 import numpy
 import pydantic
@@ -48,7 +47,7 @@ class DataMatrix:
 
     def __init__(self, samples: Sequence[Sample], features: Sequence[FeatureGroup], data: FloatArray):
         validate_data_matrix(samples, features, data)
-        self.status = DataMatrixProcessStatus()
+        self._status = DataMatrixProcessStatus()
         self.metrics = self.Metrics(self)
         self._data = data
         self._samples = [x for x in samples]
@@ -65,6 +64,10 @@ class DataMatrix:
     def get_n_samples(self) -> int:
         """Retrieve the number of samples in the data matrix."""
         return self._data.shape[0]
+
+    def get_process_status(self) -> DataMatrixProcessStatus:
+        """Retrieve the current data matrix status."""
+        return self._status
 
     def list_samples(self) -> list[Sample]:
         """List all samples in the data matrix."""
@@ -85,8 +88,8 @@ class DataMatrix:
     def get_columns(self, *groups: int) -> list[FeatureVector]:
         """Retrieve columns from the data matrix.
 
-        :param groups: the feature groups associated with each column. If no groups are provided retrieve
-            all groups.
+        :param groups: the feature groups associated with each column. If no groups are provided then all
+            groups are retrieved.
 
         """
         if not groups:
@@ -216,7 +219,11 @@ class DataMatrix:
         ...
 
     def remove_features(self, *groups: int) -> None:
-        """Remove groups with the provided groups labels."""
+        """Remove feature groups based on their groups labels.
+
+        :param groups: the group labels to remove
+
+        """
         if not groups:
             return
 
@@ -233,7 +240,11 @@ class DataMatrix:
         self._build_feature_index()
 
     def remove_samples(self, *ids: str) -> None:
-        """Remove samples with the provided sample ids."""
+        """Remove samples with based on their ids.
+
+        :param ids: the list of sample ids to remove
+
+        """
         if not ids:
             return
 
@@ -252,51 +263,16 @@ class DataMatrix:
         self._build_sample_index()
 
     def split(self, *by: str) -> Generator[tuple[tuple, DataMatrix], None, None]:
-        """Split data matrix into submatrices using sample metadata."""
+        """Split data matrix into submatrices using sample metadata.
+
+        :param by: the sample metadata fields to
+
+        """
         for group, group_indices in self._create_sample_group_to_indices(by).items():
             group_data = self._data[group_indices].copy()
             group_samples = [self._samples[i] for i in group_indices]
             validate_data_matrix(group_samples, self._features, group_data)
             yield group, self.__class__(group_samples, self._features, group_data)
-
-    def transform_features(self, transformer: FeatureTransformer, max_workers: int | None = None, **kwargs) -> None:
-        """Apply an arbitrary transformation to data matrix columns.
-
-        :param transformer: any callable with the following signature
-            :code:`def transformer(data: FeatureVector, **kwargs) -> FloatArray1D: ...`
-        :param max_workers: maximum number of workers for parallel execution.
-        :param kwargs: key word arguments passed to the transformer.
-
-        """
-        features = self.get_columns()
-        transformed: list[FeatureVector] = list()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(transformer, ft, **kwargs) for ft in features]
-            for fs in concurrent.futures.as_completed(futures):
-                transformed.append(fs.result())
-
-        # concurrent.futures produces result as each task is completed, columns must be sorted again
-        transformed = sorted(transformed, key=lambda x: x.feature.group)
-        self.set_data(numpy.column_stack([x.data for x in transformed]))
-
-    def transform_samples(self, transformer: SampleTransformer, max_workers: int | None = None, **kwargs) -> None:
-        """Apply an arbitrary transformation to data matrix rows.
-
-        :param transformer: any callable that with the following signature
-            :code:`def transformer(data: SampleVector, **kwargs) -> SampleVector: ...`
-        :param max_workers: maximum number of workers for parallel execution.
-        :param kwargs: key word arguments passed to the transformer.
-
-        """
-        transformed: list[SampleVector] = list()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(transformer, s, **kwargs) for s in self.get_rows()]
-            for fs in concurrent.futures.as_completed(futures):
-                transformed.append(fs.result())
-
-        # concurrent.futures produces result as each task is completed, rows must be sorted again
-        transformed = sorted(transformed, key=lambda x: x.sample.id)
-        self.set_data(numpy.vstack([x.data for x in transformed]))
 
     @classmethod
     def combine(cls, *matrices: DataMatrix) -> DataMatrix:
@@ -315,7 +291,7 @@ class DataMatrix:
         return cls(samples, features, data)
 
     def _sort_by_sample_order(self) -> None:
-        sorted_index = [k for k, _ in sorted(enumerate(self._samples), key=lambda x: x[1].order)]
+        sorted_index = [k for k, _ in sorted(enumerate(self._samples), key=lambda x: x[1].meta.order)]
         self._samples = [self._samples[x] for x in sorted_index]
         self._data = self._data[sorted_index]
 
@@ -342,31 +318,12 @@ class DataMatrix:
     def _sample_to_group_key(sample: Sample, groups: Sequence[str]) -> tuple:
         key = list()
         for g in groups:
-            g_key = sample.group if g == "group" else sample.extra.get(g)
-            if g_key is None:
+            try:
+                g_key = sample.meta.group if g == "group" else getattr(sample.meta, g)
+            except AttributeError:
                 raise exceptions.SampleMetadataNotFound(f"{sample.id}.meta.{g}")
             key.append(g_key)
         return tuple(key)
-
-
-class FeatureTransformer(Protocol):
-    """Define the signature for feature transformations.
-
-    It can be any function with the following signature:
-
-    """
-
-    def __call__(self, data: FeatureVector, **kwargs) -> FeatureVector: ...
-
-
-class SampleTransformer(Protocol):
-    """Define the signature for sample transformations.
-
-    It can be any function with the following signature:
-
-    """
-
-    def __call__(self, data: SampleVector, **kwargs) -> SampleVector: ...
 
 
 def validate_data_matrix(samples: Sequence[Sample], features: Sequence[FeatureGroup], data: FloatArray) -> None:
@@ -414,7 +371,7 @@ def validate_data_matrix(samples: Sequence[Sample], features: Sequence[FeatureGr
         msg = "Samples must have a unique id."
         raise exceptions.RepeatedIdError(msg)
 
-    if len({x.order for x in samples}) < n_samples:
+    if len({x.meta.order for x in samples}) < n_samples:
         msg = "Samples must have a unique order."
         raise exceptions.RepeatedSampleOrder(msg)
 

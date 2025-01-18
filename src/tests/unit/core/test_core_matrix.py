@@ -1,20 +1,13 @@
 import pathlib
-import random
 
 import numpy
 import pytest
 
 from tidyms2.core import exceptions
 from tidyms2.core.matrix import DataMatrix, FeatureVector, SampleVector, validate_data_matrix
-from tidyms2.core.models import FeatureGroup, GroupAnnotation, Sample
+from tidyms2.core.models import FeatureGroup, Sample
 
-from ..helpers import create_sample
-
-
-def create_feature_group(group: int) -> FeatureGroup:
-    ann = GroupAnnotation(label=group)
-    descriptors = {"mz": random.uniform(100.0, 1000.0)}
-    return FeatureGroup(group=group, annotation=ann, descriptors=descriptors)
+from ..helpers import create_feature_group, create_sample
 
 
 def ft_transformer(data: FeatureVector, **kwargs):
@@ -399,18 +392,6 @@ class TestDataMatrix:
         # check sample order
         remaining_samples = [x for x in samples if x.id not in rm_ids]
         assert remaining_samples == matrix.list_samples()
-
-    @pytest.mark.parametrize("max_workers", [1, 2])
-    def test_transform_features(self, matrix: DataMatrix, max_workers: int):
-        assert not numpy.allclose(matrix.get_data(), 1.0)
-        matrix.transform_features(ft_transformer, max_workers)
-        assert numpy.allclose(matrix.get_data(), 1.0)
-
-    @pytest.mark.parametrize("max_workers", [1, 2])
-    def test_transform_samples(self, matrix: DataMatrix, max_workers: int):
-        assert not numpy.allclose(matrix.get_data(), 1.0)
-        matrix.transform_samples(sample_transformer, max_workers)
-        assert numpy.allclose(matrix.get_data(), 1.0)
 
     def test_split_matrix_no_groups_yield_same_matrix(self, matrix: DataMatrix):
         groups = [x for x in matrix.split()]
