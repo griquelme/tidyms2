@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from functools import cached_property
 from pathlib import Path
-from random import randint, random
+from random import randint, random, uniform
 
+import numpy
 from pydantic import Field, computed_field
 from typing_extensions import Self
 
 from tidyms2.chem import Formula
 from tidyms2.core import models
 from tidyms2.core.enums import MSInstrument, Polarity, SeparationMode
-from tidyms2.core.models import AnnotableFeature, IsotopicEnvelope, Roi, Sample
+from tidyms2.core.matrix import DataMatrix
+from tidyms2.core.models import AnnotableFeature, FeatureGroup, GroupAnnotation, IsotopicEnvelope, Roi, Sample
 from tidyms2.core.operators.assay import AnnotationPatcher, DescriptorPatcher
 from tidyms2.core.operators.sample import FeatureExtractor, FeatureTransformer, RoiExtractor, RoiTransformer
 from tidyms2.core.registry import operator_registry
@@ -216,3 +218,16 @@ def create_features_from_formula(formula_str: str, sample: Sample, n_isotopologu
     for Mk, pk in zip(env.mz, env.p):
         features.append(ConcreteFeature(data_mz=Mk / q, data_area=pk, roi=ConcreteRoi(sample=sample)))
     return features
+
+
+def create_feature_group(group: int) -> FeatureGroup:
+    ann = GroupAnnotation(label=group)
+    descriptors = {"mz": uniform(100.0, 1000.0)}
+    return FeatureGroup(group=group, annotation=ann, descriptors=descriptors)
+
+
+def create_data_matrix(n_samples: int, n_features: int, sample_path: Path) -> DataMatrix:
+    samples = [create_sample(sample_path, k) for k in range(n_samples)]
+    features = [create_feature_group(k) for k in range(n_features)]
+    data = numpy.random.normal(loc=100.0, size=(n_samples, n_features))
+    return DataMatrix(samples, features, data)

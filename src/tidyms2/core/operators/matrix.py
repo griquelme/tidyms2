@@ -40,7 +40,6 @@ class MatrixTransformer(MatrixOperator):
 
     """
 
-    @abstractmethod
     def _apply_operator(self, data: DataMatrix) -> None:
         data.set_data(self._transform_matrix(data))
 
@@ -113,8 +112,7 @@ class ColumnTransformer(MatrixOperator):
         data.set_columns(*((x.feature.group, x.data) for x in transformed))
 
     @abstractmethod
-    @staticmethod
-    def _transform_column(column: FeatureVector) -> FeatureVector: ...
+    def _transform_column(self, column: FeatureVector) -> FeatureVector: ...
 
 
 class RowTransformer(MatrixOperator):
@@ -144,4 +142,4 @@ class RowTransformer(MatrixOperator):
         data.set_rows(*((x.sample.id, x.data) for x in transformed))
 
     @abstractmethod
-    def _transform_row(self, vector: SampleVector) -> SampleVector: ...
+    def _transform_row(self, row: SampleVector) -> SampleVector: ...
