@@ -18,26 +18,26 @@ class TestMSDataFromSample:
 
     def test_with_start_time(self, sample: Sample):
         expected = 10.0
-        sample.start_time = expected
+        sample = sample.model_copy(update={"start_time": expected})
         ms_data = MSData(sample)
         for sp in ms_data:
             assert sp.time >= expected
 
     def test_with_end_time(self, sample: Sample):
         expected = 10.0
-        sample.end_time = expected
+        sample = sample.model_copy(update={"end_time": expected})
         ms_data = MSData(sample)
         for sp in ms_data:
             assert sp.time <= expected
 
     def test_with_ms_level(self, sample: Sample):
-        sample.ms_level = 1
+        sample = sample.model_copy(update={"ms_level": 1})
         ms_data = MSData(sample)
         spectra = [sp for sp in ms_data]
         assert spectra
 
     def test_iterate_ignore_all_spectra_if_no_spectra_with_ms_level(self, sample: Sample):
-        sample.ms_level = 10
+        sample = sample.model_copy(update={"ms_level": 10})
         ms_data = MSData(sample)
         spectra = [sp for sp in ms_data]
         assert not spectra

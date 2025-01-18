@@ -57,10 +57,6 @@ class SampleModel(BaseOrmModel):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
 
-    batch: Mapped[int] = mapped_column(Integer)
-    group: Mapped[str] = mapped_column(String, nullable=True)
-    order: Mapped[int] = mapped_column(Integer, unique=True)
-
     path: Mapped[str] = mapped_column(String, nullable=False)
     reader: Mapped[str] = mapped_column(String, nullable=True)
     ms_data_mode: Mapped[str] = mapped_column(String, nullable=True)
@@ -68,21 +64,20 @@ class SampleModel(BaseOrmModel):
     start_time: Mapped[float] = mapped_column(Float)
     end_time: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    extra: Mapped[str] = mapped_column(String, nullable=True)
+    meta: Mapped[str] = mapped_column(String, nullable=True)
 
     @classmethod
     def from_sample(cls, sample: Sample) -> SampleModel:
         """Convert to pydantic model."""
-        d = sample.model_dump(mode="json")
-        if sample.extra is not None:
-            d["extra"] = json.dumps(sample.extra)
+        d = sample.model_dump(mode="json", exclude={"meta"})
+        d["meta"] = sample.meta.model_dump_json()
         return SampleModel(**d)
 
     def to_pydantic_model(self) -> Sample:
         """Convert to pydantic model."""
         d = self.to_dict()
-        if self.extra is not None:
-            d["extra"] = json.loads(d["extra"])
+        if self.meta is not None:
+            d["meta"] = json.loads(d["meta"])
         return Sample(**d)
 
 

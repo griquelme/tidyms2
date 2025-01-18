@@ -18,7 +18,7 @@ import pydantic
 from typing_extensions import Self
 
 from ..chem import EM, Formula
-from ..core.models import Chromatogram, MSSpectrum, Sample
+from ..core.models import Chromatogram, MSSpectrum, Sample, SampleMetadata
 from ..io.reader import reader_registry
 from ..utils.numpy import FloatArray1D
 
@@ -28,10 +28,12 @@ class SimulatedLCMSDataReader:
     """Read simulated LC-MS data files."""
 
     def __init__(self, src: pathlib.Path | Sample) -> None:
-        if isinstance(src, pathlib.Path) or src.extra is None:
+        if isinstance(src, pathlib.Path) or src.meta is None:
             msg = "Simulated LC-MS sample only work with sample models created with the simulated sample factory."
             raise ValueError(msg)
-        self._sample = SimulatedLCMSSample(**src.extra)
+        config: SimulatedLCMSDataConfiguration = getattr(src.meta, "config")
+        features: list[SimulatedLCMSFeature] = getattr(src.meta, "features")
+        self._sample = SimulatedLCMSSample(config=config, features=features)
         self.spectrum_factory = MSSpectrumFactory(self._sample)
 
     def get_chromatogram(self, index: int) -> Chromatogram:
@@ -118,14 +120,14 @@ class SimulatedLCMSSampleFactory(pydantic.BaseModel):
         if "path" not in kwargs:
             kwargs["path"] = pathlib.Path(".")
 
-        kwargs["reader"] = SimulatedLCMSDataReader.__name__
+        reader = SimulatedLCMSDataReader.__name__
         features: list[SimulatedLCMSFeature] = list()
         for adduct in self.adducts:
             features.extend(adduct.create_features())
         features = sorted(features, key=lambda x: x.mz)
         extra = SimulatedLCMSSample(config=self.config, features=features).model_dump()
-
-        return Sample(id=id, extra=extra, **kwargs)
+        meta = SampleMetadata(**extra)
+        return Sample(id=id, reader=reader, meta=meta, **kwargs)
 
 
 class SimulatedLCMSSample(pydantic.BaseModel):

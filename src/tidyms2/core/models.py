@@ -1,4 +1,12 @@
-"""TidyMS core data models."""
+"""TidyMS core data models.
+
+All models defined here define how data is shared in data pipelines.
+
+Refer to the :ref:`architecture overview <overview>` for an introduction to the TidyMS data model.
+
+For considerations on customizing these models, refer to the :ref:`extending-guide` guide.
+
+"""
 
 from __future__ import annotations
 
@@ -6,12 +14,11 @@ import json
 from abc import ABC, abstractmethod
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Annotated, Any, Generic, Self, TypeVar
+from typing import Generic, Self, TypeVar
 from uuid import UUID
 
 import numpy
 import pydantic
-from pydantic.functional_validators import BeforeValidator
 
 from ..utils.common import create_id
 from ..utils.numpy import FloatArray1D, IntArray1D
@@ -27,10 +34,30 @@ class TidyMSBaseModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
-class Sample(pydantic.BaseModel):
-    """Store metadata from an individual measurement."""
+class SampleMetadata(pydantic.BaseModel):
+    """Sample metadata container."""
 
-    path: Annotated[Path, BeforeValidator(lambda x: Path(x))]
+    model_config = pydantic.ConfigDict(validate_assignment=True, extra="allow")
+
+    type: str = pydantic.Field(default="", repr=False)
+    """the :term:`sample type`"""
+
+    group: str = pydantic.Field(default="", repr=False)
+    """the :term:`sample group`"""
+
+    order: pydantic.NonNegativeInt = 0
+    """the sample measurement order in an assay"""
+
+    batch: pydantic.NonNegativeInt = pydantic.Field(default=0, repr=False)
+    """the sample analytical batch number in an assay."""
+
+
+class Sample(pydantic.BaseModel):
+    """Store information required to load data from a raw data file."""
+
+    model_config = pydantic.ConfigDict(validate_assignment=True, frozen=True)
+
+    path: Path
     """Path to a raw data file"""
 
     id: str
@@ -53,17 +80,14 @@ class Sample(pydantic.BaseModel):
     end_time: pydantic.NonNegativeFloat | None = pydantic.Field(default=None, repr=False)
     """Maximum acquisition time of MS scans to include. If ``None``, end at the last scan"""
 
-    group: str = ""
-    """the sample group"""
+    meta: SampleMetadata = pydantic.Field(default=SampleMetadata(), repr=False)
+    """Sample metadata."""
 
-    order: pydantic.NonNegativeInt = 0
-    """the sample measurement order in an assay"""
-
-    batch: pydantic.NonNegativeInt = pydantic.Field(default=0, repr=False)
-    """the sample analytical batch number in an assay."""
-
-    extra: dict[str, Any] = pydantic.Field(default=dict(), repr=False)
-    """extra sample information"""
+    @pydantic.field_validator("path", mode="before")
+    def _normalize_path(cls, value: Path) -> Path:
+        if isinstance(value, str):
+            value = Path(value)
+        return value
 
     @pydantic.field_serializer("path")
     def serialize_path(self, path: Path, _info) -> str:

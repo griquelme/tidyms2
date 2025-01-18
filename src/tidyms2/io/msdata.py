@@ -129,18 +129,18 @@ class MSData:
 
         """
         sample = self.get_sample()
-        original_ms_level = sample.ms_level
-        original_start_time = sample.start_time
-        original_end_time = sample.end_time
+        tmp_config = {
+            "ms_level": ms_level or sample.ms_level,
+            "start_time": start_time or sample.start_time,
+            "end_time": end_time or sample.end_time,
+        }
+        sample_with_tmp_config = sample.model_copy(update=tmp_config)
+        Sample.model_validate(sample_with_tmp_config)
         try:
-            sample.ms_level = sample.ms_level if ms_level is None else ms_level
-            sample.start_time = sample.start_time if start_time is None else start_time
-            sample.end_time = sample.end_time if end_time is None else end_time
+            self.sample = sample_with_tmp_config
             yield
         finally:
-            sample.ms_level = original_ms_level
-            sample.start_time = original_start_time
-            sample.end_time = original_end_time
+            self.sample = sample
 
 
 class MSDataCache:
