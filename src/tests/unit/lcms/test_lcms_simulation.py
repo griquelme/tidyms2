@@ -15,16 +15,16 @@ def factory_with_grid(lcms_sample_factory: simulation.SimulatedLCMSSampleFactory
 class TestSimulatedLCMSSample:
     def test_make_grid_no_spec_ok(self, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
         sample = lcms_sample_factory(id="sample")
-        assert sample.extra is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        assert sample.meta is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert grid.size == len(simulated_sample_spec.features)
         assert np.all(np.diff(grid) > 0.0)
 
     def test_make_grid_with_spec(self, factory_with_grid: simulation.SimulatedLCMSSampleFactory):
         sample = factory_with_grid(id="sample")
-        assert sample.extra is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        assert sample.meta is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert simulated_sample_spec.config.grid is not None
         assert grid.size == simulated_sample_spec.config.grid.size
@@ -33,8 +33,8 @@ class TestSimulatedLCMSSample:
     def test_make_grid_no_features_return_empty_array(self):
         factory = simulation.SimulatedLCMSSampleFactory()
         sample = factory(id="sample")
-        assert sample.extra is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.extra)
+        assert sample.meta is not None
+        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert grid.size == 0
 

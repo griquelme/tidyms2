@@ -21,8 +21,8 @@ def ms_data(sample: Sample):
 
 @pytest.fixture
 def mz_list(sample: Sample) -> list[float]:
-    assert sample.extra is not None
-    sample_spec = SimulatedLCMSSample(**sample.extra)
+    assert sample.meta is not None
+    sample_spec = SimulatedLCMSSample(**sample.meta.model_dump())
     return list(sample_spec.make_grid())
 
 

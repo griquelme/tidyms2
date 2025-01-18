@@ -39,9 +39,9 @@ class TestValidateDataMatrix:
 
     def test_create_matrix_using_samples_with_repeated_order_raise_error(self, tmp_path: pathlib.Path):
         s1 = create_sample(tmp_path, 1)
-        s1.order = 1
+        s1.meta.order = 1
         s2 = create_sample(tmp_path, 2)
-        s2.order = 1
+        s2.meta.order = 1
         samples = [s1, s2]
         features = [create_feature_group(x) for x in range(5)]
         data = numpy.random.normal(loc=100.0, size=(2, 5))
@@ -430,16 +430,16 @@ class TestDataMatrix:
 
     def test_split_combine_groupby_sample_group(self, matrix: DataMatrix):
         for sample in matrix.list_samples():
-            if sample.order % 2:
-                sample.group = "even"
+            if sample.meta.order % 2:
+                sample.meta.group = "even"
             else:
-                sample.group = "odd"
+                sample.meta.group = "odd"
 
         submatrices = list()
         for group, mat in matrix.split("group"):
             assert len(group) == 1
             assert group[0] in ["odd", "even"]
-            assert all(x.group == group[0] for x in mat.list_samples())
+            assert all(x.meta.group == group[0] for x in mat.list_samples())
             submatrices.append(mat)
 
         combined = DataMatrix.combine(*submatrices)
@@ -450,23 +450,23 @@ class TestDataMatrix:
     def test_split_combine_groupby_sample_group_and_meta_field(self, matrix: DataMatrix):
         meta_field = "batch"
         for sample in matrix.list_samples():
-            if sample.order % 2:
-                sample.group = "even"
+            if sample.meta.order % 2:
+                sample.meta.group = "even"
             else:
-                sample.group = "odd"
+                sample.meta.group = "odd"
 
-            if sample.order % 3 == 1:
-                sample.extra[meta_field] = 1
+            if sample.meta.order % 3 == 1:
+                sample.meta.batch = 1
             else:
-                sample.extra[meta_field] = 2
+                sample.meta.batch = 2
 
         submatrices = list()
         for group_val, mat in matrix.split("group", meta_field):
             sample_group, sample_batch = group_val
             assert sample_group in ["odd", "even"]
             assert sample_batch in [1, 2]
-            assert all(x.group == sample_group for x in mat.list_samples())
-            assert all(x.extra[meta_field] == sample_batch for x in mat.list_samples())
+            assert all(x.meta.group == sample_group for x in mat.list_samples())
+            assert all(x.meta.batch == sample_batch for x in mat.list_samples())
             submatrices.append(mat)
 
         combined = DataMatrix.combine(*submatrices)
@@ -475,15 +475,15 @@ class TestDataMatrix:
         assert combined.list_features() == matrix.list_features()
 
     def test_split_missing_meta_field_raises_error(self, matrix: DataMatrix):
-        meta_field = "batch"
+        meta_field = "missing_field"
         for sample in matrix.list_samples():
-            if sample.order % 2:
-                sample.group = "even"
+            if sample.meta.order % 2:
+                sample.meta.group = "even"
             else:
-                sample.group = "odd"
+                sample.meta.group = "odd"
 
-            if sample.order % 3 == 1:
-                sample.extra[meta_field] = 1
+            if sample.meta.order % 3 == 1:
+                sample.meta.missing_field = 1  # type: ignore
 
         with pytest.raises(exceptions.SampleMetadataNotFound):
             [x for x in matrix.split("group", meta_field)]

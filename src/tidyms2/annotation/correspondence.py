@@ -87,7 +87,7 @@ def match_features(
 
     # create group array
     sample_id_to_sample = {x.id: x for x in sample_list}
-    groups, group_mapping = encode([sample_id_to_sample[x.sample_id].group for x in annotations])
+    groups, group_mapping = encode([sample_id_to_sample[x.sample_id].meta.group for x in annotations])
 
     # count samples per group
     group_sample_pairs = {(x, y) for x, y in zip(groups, sample_encoded)}

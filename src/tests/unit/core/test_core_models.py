@@ -125,7 +125,7 @@ class TestSample:
     def test_serialization(self, tmp_path):
         sample_id = "my-sample"
         path = tmp_path / sample_id
-        expected = models.Sample(id=sample_id, path=path, batch=2)
+        expected = models.Sample(id=sample_id, path=path)
         actual = models.Sample(**expected.model_dump())
         assert actual == expected
 
@@ -133,6 +133,6 @@ class TestSample:
         sample_id = "my-sample"
         path = tmp_path / sample_id
         extra = {"extra-field-1": 0.25, "extra-field-2": 3, "extra-field-3": "extra"}
-        expected = models.Sample(id=sample_id, path=path, batch=2, extra=extra)
+        expected = models.Sample(id=sample_id, path=path, meta=extra)  # type: ignore
         actual = models.Sample(**expected.model_dump())
         assert actual == expected

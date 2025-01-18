@@ -3,7 +3,6 @@ import pytest
 from tidyms2.core.models import MZTrace, Sample
 from tidyms2.lcms import operators
 from tidyms2.lcms.models import Peak
-from tidyms2.lcms.simulation import SimulatedLCMSSample
 from tidyms2.storage.memory import OnMemorySampleStorage
 
 
@@ -14,9 +13,9 @@ def sample(lcms_sample_factory) -> Sample:
 
 @pytest.fixture
 def n_features(sample: Sample) -> int:
-    assert sample.extra is not None
-    simulated_sample_spec = SimulatedLCMSSample(**sample.extra)
-    return len(simulated_sample_spec.features)
+    assert sample.meta is not None
+    # simulated samples will contain this meta field
+    return len(sample.meta.features)  # type: ignore
 
 
 @pytest.fixture

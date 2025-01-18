@@ -134,7 +134,7 @@ def test_match_features():
     descriptors = dict()
     n_noise = 10
     n_samples = 200
-    samples = [Sample(id=f"sample-{x}", path=pathlib.Path("."), group="0") for x in range(n_samples)]
+    samples = [Sample(id=f"sample-{x}", path=pathlib.Path(".")) for x in range(n_samples)]
     annotations = list()
     for n, loc in [(200, 0), (200, 4), (n_noise, 8)]:
         mz_list = descriptors.setdefault("mz", list())
