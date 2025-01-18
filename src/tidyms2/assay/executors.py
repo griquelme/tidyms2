@@ -8,7 +8,7 @@ import pydantic
 
 from ..core.exceptions import SampleProcessorError
 from ..core.models import FeatureType, RoiType, Sample
-from ..core.operators import Pipeline
+from ..core.operators.pipeline import Pipeline
 from ..core.storage import AssayStorage
 from ..storage import OnMemorySampleStorage
 

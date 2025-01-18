@@ -3,7 +3,7 @@ import pytest
 
 from tidyms2.core.dataflow import SampleProcessStatus
 from tidyms2.core.exceptions import PipelineConfigurationError, ProcessStatusError, RepeatedIdError
-from tidyms2.core.operators import Pipeline
+from tidyms2.core.operators.pipeline import Pipeline
 from tidyms2.storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
 
 from .. import helpers
@@ -321,3 +321,7 @@ class TestPipeline:
         pipe.apply(sample_storage)
         assert sample_storage.get_n_rois()
         assert sample_storage.get_n_features()
+
+
+class TestMatrixTransformer:
+    pass

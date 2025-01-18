@@ -7,7 +7,8 @@ from uuid import UUID
 
 from ..core.exceptions import UnprocessedSampleError
 from ..core.models import Annotation, FeatureType, RoiType, Sample
-from ..core.operators import Pipeline
+from ..core.operators.assay import AssayOperator, MissingImputer
+from ..core.operators.pipeline import Pipeline
 from ..core.storage import AssayStorage
 from .executors import SampleProcessor
 
@@ -121,7 +122,12 @@ class Assay(Generic[RoiType, FeatureType]):
         """Apply assay pipeline to assay data."""
         if self._sample_queue:
             raise UnprocessedSampleError(", ".join(x for x in self._sample_queue))
-        self.pipes.assay.apply(self._storage)
+
+        for op in self.pipes.assay.operators:
+            assert isinstance(op, AssayOperator)
+            if isinstance(op, MissingImputer):
+                pass
+            op.apply(self._storage)
 
     def _empty_sample_queue(self) -> None:
         self._sample_queue = OrderedDict()
