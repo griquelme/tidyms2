@@ -39,10 +39,10 @@ class SampleMetadata(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(validate_assignment=True, extra="allow")
 
-    type: str = pydantic.Field(default="", repr=False)
+    type: str = ""
     """the :term:`sample type`"""
 
-    group: str = pydantic.Field(default="", repr=False)
+    group: str = ""
     """the :term:`sample group`"""
 
     order: pydantic.NonNegativeInt = 0
@@ -55,7 +55,7 @@ class SampleMetadata(pydantic.BaseModel):
 class Sample(pydantic.BaseModel):
     """Store information required to load data from a raw data file."""
 
-    model_config = pydantic.ConfigDict(validate_assignment=True, frozen=True)
+    model_config = pydantic.ConfigDict(validate_assignment=True, frozen=True, extra="forbid")
 
     path: Path
     """Path to a raw data file"""
