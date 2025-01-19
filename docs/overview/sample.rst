@@ -1,9 +1,9 @@
 .. _sample-overview:
 
-Sample workflow
+Sample pipeline
 ===============
 
-The sample workflow applies operations on data from individual samples. Data generated in the sample workflow is
+The sample pipeline applies operations on data from individual samples. Data generated in the sample workflow is
 stored using a :py:class:`~tidyms2.core.storage.SampleStorage` which provides an interface for reading and writing
 sample data.  The preprocessing state of a sample is represented using the
 :py:class:`~tidyms2.core.dataflow.SampleProcessStatus`.
@@ -22,12 +22,13 @@ entities:
         
     Sample data level models
 
-A sample stores metadata from an individual measurement. It contains the required information to access the sample
-raw data including path to the raw data file, MS level, start acquisition time and end acquisition time. It also
-contains information associated with the assay design, such as sample group, sample order and sample batch. A
-:term:`Region Of Interest <ROI>` stores a region extracted from a sample raw data which may contain information
-about chemical species of interest. There is a many-to-one relationship between ROIs and a sample. In an :term:`LC-MS`
-assay an :term:`EIC` would be modelled as a ROI. A :term:`feature` defines where a chemical species is located in a ROI.
+A sample stores metadata from an individual measurement. It contains the required information to access the
+sample raw data including path to the raw data file, MS level, start acquisition time and end acquisition time.
+It also contains information associated with the assay design, such as sample group, sample order and sample batch.
+The sample model can also store arbitrary sample metadata, as long as it is JSON serializable. A :term:`Region
+Of Interest <ROI>` stores a region extracted from a sample raw data which may contain information about chemical
+species of interest. There is a many-to-one relationship between ROIs and a sample. In an :term:`LC-MS` assay an
+:term:`EIC` would be modelled as a ROI. A :term:`feature` defines where a chemical species is located in a ROI.
 The term feature is borrowed from the machine learning field, and is used to highlight the fact that, even if a feature
 is associated with a single chemical species, its chemical identity is not known. There is a many-to-one relationship
 between features and a ROI. In an :term:`LC-MS` assay a chromatographic peak would be modelled as a Feature. A Feature
@@ -37,7 +38,7 @@ Sample that is associated with. It also provides chemical identity information s
 charge and isotopologue annotation. There is a one-to-one relationship between a feature and an annotation.
 
 Both ROI an Feature are abstract classes that must be implemented for each assay type (LC-MS, direct injection MS, ...).
-The :ref:`extending-guide` contains detailed information on how to create or customize new ROI and Feature models.
+The :ref:`extending-guide` guide contains detailed information on how to create or customize new ROI and Feature models.
 
 .. _sample-data-flow:
 
@@ -45,12 +46,12 @@ Sample data flow
 ----------------
 
 The sample data flow, which ensures data integrity during sample preprocessing, is enforced by defining a set of allowed
-operations on sample data. Each operation is defined has an associated operator. The following operators are
-available for sample data preprocessing: :py:class:`~tidyms2.core.operators.RoiExtractor`,
-:py:class:`~tidyms2.core.operators.RoiTransformer`, :py:class:`~tidyms2.core.operators.FeatureExtractor`,
-:py:class:`~tidyms2.core.operators.FeatureTransformer` and :py:class:`~tidyms2.core.operators.SampleOperator`
+operations on sample data. Each operation is associated with an operator. The following operators are
+available for sample data preprocessing: :py:class:`~tidyms2.core.operators.sample.RoiExtractor`,
+:py:class:`~tidyms2.core.operators.sample.RoiTransformer`, :py:class:`~tidyms2.core.operators.sample.FeatureExtractor`,
+:py:class:`~tidyms2.core.operators.sample.FeatureTransformer` and :py:class:`~tidyms2.core.operators.sample.SampleOperator`
 
-The ROI extractor create ROIs using raw data. The ROI transformer apply transformations to individual ROIs.
+The ROI extractor create ROIs using raw data. The ROI transformer apply transformations to existing ROIs.
 A feature extractor search features on individual ROIs. The feature extractor also provides descriptor-based
 filtering, allowing to keep or filter features based on descriptor values such as peak width or :term:`SNR`. A feature
 transformer apply transformations to individual features. Finally, the sample operator applies an arbitrary operation
@@ -61,7 +62,7 @@ All of these operators must be implemented for each ROI-feature pair. Refer to t
 for detailed information on how to create new operators.
 
 Each one of these operators require a given sample data state to be applied to sample data. Otherwise, they will
-fail. The sample data data is defined by a :py:class:`~tidyms2.core.dataflow.SampleProcessStatus`. The following
+fail. The sample data state is defined by a :py:class:`~tidyms2.core.dataflow.SampleProcessStatus`. The following
 table contains the required sample data state by each operator:
 
 .. list-table:: Sample data state required by each operator
@@ -97,7 +98,7 @@ table contains the required sample data state by each operator:
      - 
      - 
 
-After applying a operator to a sample, the sample state is updated to reflect the applied transformation.
+After applying an operator to a sample, the sample state is updated to reflect the applied transformation.
 Multiple operators are chained together to build the sample preprocessing
 :py:class:`~tidyms2.core.operators.Pipeline`. A pipeline ensures that the data flow is correct before applying
 any operation by checking the expected state of consecutive operators. For example, as feature extraction can be
@@ -113,4 +114,4 @@ LC-MS data:
 
 .. figure:: assets/lcms-sample-workflow.png
         
-    Example of an LC-MS sample preprocessing workflow
+    Example of an LC-MS sample preprocessing pipeline

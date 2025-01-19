@@ -4,10 +4,8 @@ Architecture overview
 =====================
 
 These documents describe the library structure and the rationale behind its design. :ref:`introduction-overview`
-provides the motivation for the library components architecture and introduces the TidyMS data model and data flow,
-which combined define a grammar for applying transformations to MS data. :ref:`sample-overview` provides a high level
-description of the data model and data flow for individual sample preprocessing. :ref:`assay-overview` describes the
-data model and data flow for combining data from multiple samples.
+presents the TidyMS data model and data flow, which combined define how MS data is transformed. The
+subsequent sections describe the data model and data flow in detail for each pipeline type.
 
 .. toctree::
    :maxdepth: 1
@@ -15,3 +13,4 @@ data model and data flow for combining data from multiple samples.
    overview/introduction
    overview/sample
    overview/assay
+   overview/matrix

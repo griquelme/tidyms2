@@ -9,7 +9,7 @@ protocol and is suited for most sample preprocessing workflows.
 Implementation
 --------------
 
-TidyMS is built on top some of the more battle tested Python libraries:
+TidyMS is built on top of some of the more battle tested Python libraries:
 
 pydantic
     All TidyMS data models are defined as pydantic models, ensuring robust data validations along

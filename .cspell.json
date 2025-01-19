@@ -99,6 +99,7 @@
         "Makefile",
         "make.bat",
         "*.mzML",
-        "*.json"
+        "*.json",
+        "*.pyc"
     ]
 }

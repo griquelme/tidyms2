@@ -1,18 +1,45 @@
 .. _core-operators-api:
 
-Operators
-=========
+Base operator
+=============
 
-.. automodule:: tidyms2.core.operators
+.. automodule:: tidyms2.core.operators.base
    :members:
         BaseOperator,
-        SampleOperator,
-        RoiExtractor,
-        RoiTransformer,
-        FeatureExtractor,
-        FeatureTransformer,
-        AnnotationPatcher,
-        DescriptorPatcher,
-        MissingImputer,
    :show-inheritance:
-   :exclude-members: model_computed_fields, model_config, model_fields
+
+
+Sample operators
+================
+
+.. automodule:: tidyms2.core.operators.sample
+   :members:
+          SampleOperator,
+          RoiExtractor,
+          RoiTransformer,
+          FeatureExtractor,
+          FeatureTransformer,
+   :show-inheritance:
+
+Assay operators
+===============
+
+.. automodule:: tidyms2.core.operators.assay
+   :members:
+          AnnotationPatcher,
+          DescriptorPatcher,
+          MissingImputer,
+   :show-inheritance:
+
+Matrix operators
+================
+
+.. automodule:: tidyms2.core.operators.matrix
+   :members:
+          MatrixOperator,
+          MatrixTransformer,
+          ColumnTransformer,
+          RowTransformer,
+          ColumnFilter,
+          RowFilter,
+   :show-inheritance:
