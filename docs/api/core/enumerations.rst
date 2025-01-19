@@ -3,7 +3,7 @@
 Enumerations
 ============
 
-.. autoclass:: tidyms2.core.enums.DataType()
+.. autoclass:: tidyms2.core.enums.OperatorType()
     :members:
 
 .. autoclass:: tidyms2.core.enums.MSInstrument()

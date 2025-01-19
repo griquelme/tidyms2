@@ -3,21 +3,21 @@
 Introduction
 ------------
 
-In broad terms, the goal of mass spectrometry data preprocessing is, starting from raw data measurements, to extract a 
-property associated with the abundance of a chemical species in a sample. Usually, this property is compared across
-multiple samples measured under similar experimental conditions. We refer to such collection of samples as an
-:term:`assay`. Data from multiple chemical species are organized into a table or :term:`data matrix` where each entry value
-is the abundance associated with each sample, chemical species pair. We refer to all of the steps involved with
-creating a data matrix from raw data, as MS data preprocessing.
+In broad terms, the goal of mass spectrometry data preprocessing is, starting from raw data measurements,
+to extract a property associated with the abundance of chemical species in a sample. Usually, this property is
+compared across multiple samples measured under similar experimental conditions. We refer to such collection of
+samples as an :term:`assay`. Data from multiple chemical species are organized into a table or :term:`data matrix`
+where each entry in the matrix is associated with a unique `(sample, chemical species)` pair. We refer to all of
+the steps involved with creating a data matrix from raw data as MS data preprocessing.
 
-We use an :term:`LC-MS` assay as an example of the preprocessing steps used to build a data matrix from raw data.
-This will help us identity some key concepts in MS data preprocessing. The first step in :term:`LC-MS` data
-preprocessing is to create :term:`EICs <EIC>` from each sample raw data. A peak detection algorithm is then applied to each
-:term:`EIC` and each detected peak is, in principle, a single chemical species (this is not strictly true due to potential
-coellution of isobars, or ionic species with close :term:`m/z` values). After chemical species are detected on all samples,
-they must be grouped according to their chemical identity. Chromatographic peak alignment algorithms are commonly
-used to this end. Once peaks are aligned, we can proceed to the creation of the data matrix using, for example, the
-peak area as the value for each data matrix entry.
+We will use an :term:`LC-MS` assay to exemplify the typical steps involved during MS data preprocessing
+This will help us identity some key concepts in MS data preprocessing. The first step in :term:`LC-MS`
+data preprocessing is to create :term:`EICs <EIC>` from each sample raw data. A peak detection algorithm is then
+applied to each :term:`EIC` where each detected peak is, in principle, a single chemical species (this is not strictly
+true due to potential coellution of multiple ionic species with close :term:`m/z` values). After chemical species
+are detected on all samples, they must be grouped according to their chemical identity. Chromatographic peak
+alignment algorithms are commonly used to this end. Once peaks are aligned, we can build the data matrix using,
+for example, the peak area as the value for each data matrix entry.
 
 From this example we can extract several insights. First, for each preprocessing step (EIC extraction, peak detection
 and peak alignment), there is a huge number of algorithms available in the literature. There are also different ways in

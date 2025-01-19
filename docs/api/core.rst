@@ -8,6 +8,7 @@ Core components
 
    core/enumerations
    core/models
-   core/operators
+   Operators <core/operators>
    Data flow <core/dataflow>
    core/interfaces
+   core/matrix

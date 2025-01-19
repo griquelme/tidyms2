@@ -1,7 +1,7 @@
 .. _core-interfaces-api:
 
-Interfaces
-----------
+Storage interfaces
+==================
 
 .. automodule:: tidyms2.core.storage
    :show-inheritance:
