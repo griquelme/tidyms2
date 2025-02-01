@@ -6,7 +6,7 @@ import pytest
 from tidyms2.algorithms import raw
 from tidyms2.core.models import Chromatogram, MSSpectrum, Sample
 from tidyms2.io import MSData
-from tidyms2.lcms.simulation import SimulatedLCMSSample
+from tidyms2.simulation.lcms import SimulatedLCMSSample
 
 
 @pytest.fixture
