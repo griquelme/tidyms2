@@ -3,45 +3,45 @@ import pytest
 
 from tidyms2.core.models import MSSpectrum
 from tidyms2.io import MSData
-from tidyms2.lcms import simulation
+from tidyms2.simulation import lcms
 
 
 @pytest.fixture
-def factory_with_grid(lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
-    lcms_sample_factory.config.grid = simulation.MZGridSpecification()
+def factory_with_grid(lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
+    lcms_sample_factory.config.grid = lcms.MZGridSpecification()
     return lcms_sample_factory
 
 
 class TestSimulatedLCMSSample:
-    def test_make_grid_no_spec_ok(self, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
+    def test_make_grid_no_spec_ok(self, lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
         sample = lcms_sample_factory(id="sample")
         assert sample.meta is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
+        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert grid.size == len(simulated_sample_spec.features)
         assert np.all(np.diff(grid) > 0.0)
 
-    def test_make_grid_with_spec(self, factory_with_grid: simulation.SimulatedLCMSSampleFactory):
+    def test_make_grid_with_spec(self, factory_with_grid: lcms.SimulatedLCMSSampleFactory):
         sample = factory_with_grid(id="sample")
         assert sample.meta is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
+        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert simulated_sample_spec.config.grid is not None
         assert grid.size == simulated_sample_spec.config.grid.size
         assert np.all(np.diff(grid) > 0.0)
 
     def test_make_grid_no_features_return_empty_array(self):
-        factory = simulation.SimulatedLCMSSampleFactory()
+        factory = lcms.SimulatedLCMSSampleFactory()
         sample = factory(id="sample")
         assert sample.meta is not None
-        simulated_sample_spec = simulation.SimulatedLCMSSample(**sample.meta.model_dump())
+        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
         grid = simulated_sample_spec.make_grid()
         assert grid.size == 0
 
 
 class TestSimulatedMSData:
     @pytest.fixture(scope="class")
-    def data(self, lcms_sample_factory: simulation.SimulatedLCMSSampleFactory):
+    def data(self, lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
         sample = lcms_sample_factory(id="sample")
         return MSData(sample)
 
