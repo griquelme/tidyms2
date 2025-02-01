@@ -191,9 +191,10 @@ class DummyDescriptorPatcher(DescriptorPatcher):
         pass
 
 
-def create_sample(path: Path, suffix: int, group: str = "") -> models.Sample:
+def create_sample(path: Path, suffix: int, group: str = "", create_file: bool = True) -> models.Sample:
     file = path / f"sample-{suffix}.mzML"
-    file.touch()
+    if create_file:
+        file.touch()
     sample = models.Sample(path=file, id=file.stem)
     sample.meta.group = group
     sample.meta.order = suffix
