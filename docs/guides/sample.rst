@@ -89,7 +89,7 @@ single spectrum:
     params = AccumulateSpectraParameters(start_time=10.0, end_time=15.0)
     accumulated_spectrum = accumulate_spectra(data, params)
 
-The `algorithms` package provides several utilities to process data, such as untargeted :term:`roi: creation
+The `algorithms` package provides several utilities to process data, such as untargeted :term:`ROI` creation
 from raw data or peak picking routines, but you need to write the logic for moving and storing data around.
 The high level API provides an easy to use way to process data and orchestrates data storage between
 transformations.

@@ -28,6 +28,7 @@ extensions = [
     "sphinx_design",
     "sphinx_autodoc_typehints",
     "sphinxcontrib.autodoc_pydantic",
+    "matplotlib.sphinxext.plot_directive",
 ]
 
 templates_path = ["_templates"]
