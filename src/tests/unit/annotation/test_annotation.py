@@ -43,42 +43,42 @@ def peak_list() -> list[Peak]:
         "adducts": [
             {
                 "formula": "[C10H20O2]-",
-                "base_intensity": 10000,
+                "abundance": {"mu": 10000},
                 "rt_mean": 50,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
             },
             {
                 "formula": "[C10H20BO3]-",
-                "base_intensity": 20000,
+                "abundance": {"mu": 20000},
                 "rt_mean": 75,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
             },
             {
                 "formula": "[C20H40BO5]2-",
-                "base_intensity": 30000,
+                "abundance": {"mu": 30000},
                 "rt_mean": 150,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
             },
             {
                 "formula": "[C18H19N2O3]-",
-                "base_intensity": 25000,
+                "abundance": {"mu": 25000},
                 "rt_mean": 200,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
             },
             {
                 "formula": "[C18H20N2O3Cl]-",
-                "base_intensity": 25000,
+                "abundance": {"mu": 25000},
                 "rt_mean": 200,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
             },
             {
                 "formula": "[C10H20Cl]-",
-                "base_intensity": 20000,
+                "abundance": {"mu": 20000},
                 "rt_mean": 175,
                 "rt_width": 3.0,
                 "n_isotopologues": 4,
@@ -86,7 +86,7 @@ def peak_list() -> list[Peak]:
         ],
     }
     factory = SimulatedLCMSSampleFactory(**factory_config)
-    sample = factory(id="simulated_sample")
+    sample = factory("simulated_sample")
 
     data = OnMemorySampleStorage(sample, MZTrace, Peak)
 

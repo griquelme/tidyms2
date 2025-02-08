@@ -1,26 +1,19 @@
-"""Utilities to simulate LC-MS data.
-
-Provides:
-
-SimulatedLCMSDataReader
-    A Reader that can be plugged into MSData to generate simulated LC-MS data files.
-SimulatedLCMSSampleFactory
-    A pydantic model that creates simulated sample data configuration.
-
-"""
+"""Utilities to simulate LC-MS data."""
 
 from __future__ import annotations
 
 import pathlib
+import random
 
-import numpy as np
+import numpy
 import pydantic
 from typing_extensions import Self
 
-from ..chem import EM, Formula
-from ..core.models import Chromatogram, MSSpectrum, Sample, SampleMetadata
+from ..core.matrix import DataMatrix
+from ..core.models import Chromatogram, FeatureGroup, GroupAnnotation, MSSpectrum, Sample, SampleMetadata
 from ..io.reader import reader_registry
-from ..utils.numpy import FloatArray1D
+from ..utils.numpy import FloatArray, FloatArray1D
+from .base import BaseChemicalSpeciesSpec, DataAcquisitionSpec
 
 
 @reader_registry.register()
@@ -28,13 +21,11 @@ class SimulatedLCMSDataReader:
     """Read simulated LC-MS data files."""
 
     def __init__(self, src: pathlib.Path | Sample) -> None:
-        if isinstance(src, pathlib.Path) or src.meta is None:
+        if isinstance(src, pathlib.Path) or not hasattr(src.meta, "_simulated"):
             msg = "Simulated LC-MS sample only work with sample models created with the simulated sample factory."
             raise ValueError(msg)
-        config: SimulatedLCMSDataConfiguration = getattr(src.meta, "config")
-        features: list[SimulatedLCMSFeature] = getattr(src.meta, "features")
-        self._sample = SimulatedLCMSSample(config=config, features=features)
-        self.spectrum_factory = MSSpectrumFactory(self._sample)
+        self._simulated_sample_spec = src.meta._simulated  # type: ignore
+        self._spectrum_factory = MSSpectrumFactory(self._simulated_sample_spec)
 
     def get_chromatogram(self, index: int) -> Chromatogram:
         """Retrieve a chromatogram from file."""
@@ -42,7 +33,7 @@ class SimulatedLCMSDataReader:
 
     def get_spectrum(self, index: int) -> MSSpectrum:
         """Retrieve a spectrum from file."""
-        return self.spectrum_factory.create(index)
+        return self._spectrum_factory.create(index)
 
     def get_n_chromatograms(self) -> int:
         """Retrieve the total number of chromatograms."""
@@ -50,68 +41,20 @@ class SimulatedLCMSDataReader:
 
     def get_n_spectra(self) -> int:
         """Retrieve the total number of spectra."""
-        return self._sample.config.n_scans
-
-
-class SimulatedLCMSDataConfiguration(pydantic.BaseModel):
-    """Store configuration of a simulated LC-MS sample."""
-
-    grid: MZGridSpecification | None = None
-    """The m/z grid specification. If not specified, a grid is created using features m/z."""
-
-    mz_noise: pydantic.NonNegativeFloat = 0.001
-    """Additive noise added to m/z in each scan"""
-
-    amp_noise: pydantic.NonNegativeFloat = 10.0
-    """additive noise added to spectral intensity on each scan"""
-
-    mz_width: pydantic.PositiveFloat = 0.005
-    """The peak width in the m/z domain"""
-
-    n_scans: pydantic.PositiveInt = 500
-    """The number of scans in the sample"""
-
-    time_resolution: pydantic.PositiveFloat = 1.0
-    """The time spacing between scans"""
-
-    min_signal_intensity: pydantic.PositiveFloat | None = None
-    """If specified, elements in a spectrum with values lower than this parameter are removed"""
-
-    signal_noise: pydantic.PositiveFloat = 10.0
-    """Additive noise added to the spectral intensity in each scan"""
-
-    ms_level: pydantic.PositiveInt = 1
-    """The spectra MS level"""
-
-
-class MZGridSpecification(pydantic.BaseModel):
-    """Store specification to create an m/z grid."""
-
-    low: pydantic.PositiveFloat = 100.0
-    """The minimum m/z value in the grid"""
-
-    high: pydantic.PositiveFloat = 1200.0
-    """The maximum m/z value in the grid"""
-
-    size: pydantic.PositiveInt = 10000
-    """The number of elements in the grid"""
-
-    def create(self) -> FloatArray1D:
-        """Create a m/z grid."""
-        return np.linspace(self.low, self.high, self.size)
+        return self._simulated_sample_spec.config.n_scans
 
 
 class SimulatedLCMSSampleFactory(pydantic.BaseModel):
     """Utility that creates simulated data samples."""
 
-    config: SimulatedLCMSDataConfiguration = SimulatedLCMSDataConfiguration()
+    data_acquisition: DataAcquisitionSpec = DataAcquisitionSpec()
     """The sample configuration used to simulate data."""
 
     adducts: list[SimulatedLCMSAdductSpec] = list()
     """the list of adducts to include in the simulated sample."""
 
-    def __call__(self, id: str, **kwargs) -> Sample:
-        """Create a new simulated sample model.
+    def __call__(self, id: str, group: str | None = None, order: int = 0, **kwargs) -> Sample:
+        """Create a :py:class:`~tidyms2.core.models.Sample` with simulated data specs.
 
         :param id: the id for the sample
         :param kwargs: extra sample information passed to the :py:class:`tidyms2.Sample` constructor.
@@ -121,19 +64,27 @@ class SimulatedLCMSSampleFactory(pydantic.BaseModel):
             kwargs["path"] = pathlib.Path(".")
 
         reader = SimulatedLCMSDataReader.__name__
+        meta = SampleMetadata(group=group or "", order=order)
+        meta._simulated = self.create_simulated_sample_spec(group, order)  # type: ignore
+        return Sample(id=id, reader=reader, meta=meta, **kwargs)
+
+    def create_features(self, group: str | None = None, order: int = 0) -> list[SimulatedLCMSFeature]:
+        """Create the list of features in a sample using the spec."""
         features: list[SimulatedLCMSFeature] = list()
         for adduct in self.adducts:
-            features.extend(adduct.create_features())
-        features = sorted(features, key=lambda x: x.mz)
-        extra = SimulatedLCMSSample(config=self.config, features=features).model_dump()
-        meta = SampleMetadata(**extra)
-        return Sample(id=id, reader=reader, meta=meta, **kwargs)
+            features.extend(adduct.create_simulated_features(group, order))
+        return sorted(features, key=lambda x: x.mz)
+
+    def create_simulated_sample_spec(self, group: str | None = None, order: int = 0) -> SimulatedLCMSSample:
+        """Create a simulated sample specification."""
+        features = self.create_features(group, order)
+        return SimulatedLCMSSample(config=self.data_acquisition, features=features)
 
 
 class SimulatedLCMSSample(pydantic.BaseModel):
     """Create simulated LC-MS data files."""
 
-    config: SimulatedLCMSDataConfiguration
+    config: DataAcquisitionSpec
     """The sample configuration used to simulate data."""
 
     features: list[SimulatedLCMSFeature] = list()
@@ -142,7 +93,7 @@ class SimulatedLCMSSample(pydantic.BaseModel):
     def make_grid(self) -> FloatArray1D:
         """Create a grid from features m/z values."""
         if self.config.grid is None:
-            grid = np.array(sorted([x.mz for x in self.features]))
+            grid = numpy.array(sorted([x.mz for x in self.features]))
         else:
             grid = self.config.grid.create()
         return grid
@@ -160,46 +111,36 @@ class SimulatedLCMSSample(pydantic.BaseModel):
             f.write(self.model_dump_json())
 
 
-class SimulatedLCMSAdductSpec(pydantic.BaseModel):
+class RtSpec(pydantic.BaseModel):
+    """Define the retention time value in samples."""
+
+    mean: pydantic.PositiveFloat = 10.0
+    """The mean retention time across samples"""
+
+    std: pydantic.NonNegativeFloat = 0.0
+    """The retention time standard deviation across samples"""
+
+    width: pydantic.PositiveFloat = 3.0
+    """The peak width of the chromatogram"""
+
+    def compute_sample_rt(self) -> float:
+        """Compute an observation of the retention time."""
+        noise = random.gauss(sigma=self.std)
+        return max(0.0, self.mean + noise)
+
+
+class SimulatedLCMSAdductSpec(BaseChemicalSpeciesSpec):
     """Define a set of isotopologue feature created from an adduct."""
 
-    formula: str
-    """The adduct formula. Used as a :py:class:`tidyms.chem.Formula` argument."""
+    rt: RtSpec = RtSpec()
+    """The adduct retention time specification"""
 
-    n_isotopologues: pydantic.PositiveInt = 5
-    """The number of isotopologues to simulate."""
-
-    rt_mean: pydantic.PositiveFloat
-    """The adduct retention time"""
-
-    rt_noise: pydantic.PositiveFloat | None = None
-    """Additive noise for the features retention time."""
-
-    rt_width: pydantic.PositiveFloat = 3.0
-    """The features peak width"""
-
-    base_intensity: pydantic.PositiveFloat = 100.0
-    """The base adduct intensity. This value is scaled by the relative abundance of isotopologues to
-    compute the feature height.
-    """
-
-    def create_features(self) -> list[SimulatedLCMSFeature]:
-        """Create a list of simulated features to simulate a sample."""
-        formula = Formula(self.formula)
-        envelope = formula.get_isotopic_envelope(n=self.n_isotopologues)
-
-        if self.rt_noise is None:
-            rt_noise = 0.0
-        else:
-            rt_noise = np.random.normal(scale=self.rt_noise)
-
-        rt = self.rt_mean + rt_noise
-
+    def create_simulated_features(self, group: str | None = None, order: int = 0) -> list[SimulatedLCMSFeature]:
+        """Create a list of simulated features used by a simulated sample."""
+        rt = self.rt.compute_sample_rt()
         features = list()
-        for Mk, pk in zip(envelope.mz, envelope.p):
-            mzk = (Mk - formula.charge * EM) / abs(formula.charge)
-            int_k = self.base_intensity * pk
-            ft = SimulatedLCMSFeature(mz=mzk, rt=rt, int=int_k, width=self.rt_width)
+        for mzk, ik in zip(self.get_mz(), self.compute_intensity(group, order)):
+            ft = SimulatedLCMSFeature(mz=mzk, rt=rt, int=ik, width=self.rt.width)
             features.append(ft)
         return features
 
@@ -213,7 +154,7 @@ class SimulatedLCMSFeature(pydantic.BaseModel):
     rt: pydantic.PositiveFloat
     """The feature retention time."""
 
-    int: pydantic.PositiveFloat
+    int: pydantic.NonNegativeFloat
     """the feature intensity."""
 
     width: pydantic.PositiveFloat
@@ -228,7 +169,7 @@ class MSSpectrumFactory:
         self.grid = sample.make_grid()
         self._is_centroid = sample.config.grid is not None
         scan = sample.config.n_scans
-        self._random_seeds = np.random.choice(scan * 10, scan)
+        self._random_seeds = numpy.random.choice(scan * 10, scan)
 
     def create(self, scan: int) -> MSSpectrum:
         """Create a ms spectrum instance."""
@@ -237,8 +178,8 @@ class MSSpectrumFactory:
         mz = self._compute_mz(scan)
         sp = self._compute_intensity(mz, scan)
 
-        if self.sample.config.min_signal_intensity is not None:
-            mask = sp >= self.sample.config.min_signal_intensity
+        if self.sample.config.min_int is not None:
+            mask = sp >= self.sample.config.min_int
             mz = mz[mask]
             sp = sp[mask]
 
@@ -251,13 +192,13 @@ class MSSpectrumFactory:
     def _compute_mz(self, scan: int) -> FloatArray1D:
         # use the same random seed for a given scan for reproducibility
         seed = self._random_seeds[scan]
-        np.random.seed(seed)
+        numpy.random.seed(seed)
 
         # add random noise to the m/z grid
-        noise_level = self.sample.config.mz_noise
+        noise_level = self.sample.config.mz_std
 
         if noise_level > 0.0:
-            noise = np.random.normal(size=self.grid.size, scale=noise_level)
+            noise = numpy.random.normal(size=self.grid.size, scale=noise_level)
             mz = self.grid + noise
         else:
             mz = self.grid.copy()
@@ -266,14 +207,85 @@ class MSSpectrumFactory:
 
     def _compute_intensity(self, mz: FloatArray1D, scan: int):
         time = self.sample.config.time_resolution * scan
-        intensity = np.zeros_like(mz)
+        intensity = numpy.zeros_like(mz)
         mz_width = self.sample.config.mz_width
         for ft in self.sample.features:
-            amp = ft.int * np.power(np.e, -0.5 * ((time - ft.rt) / ft.width) ** 2)
-            intensity += amp * np.power(np.e, -0.5 * ((mz - ft.mz) / mz_width) ** 2)
+            amp = ft.int * numpy.power(numpy.e, -0.5 * ((time - ft.rt) / ft.width) ** 2)
 
-        if self.sample.config.amp_noise > 0.0:
-            intensity += np.random.normal(size=intensity.size, scale=self.sample.config.amp_noise)
+            # this step allows computing values both in profile and centroid mode
+            intensity += amp * numpy.power(numpy.e, -0.5 * ((mz - ft.mz) / mz_width) ** 2)
+
+        if self.sample.config.int_std > 0.0:
+            intensity += numpy.random.normal(size=intensity.size, scale=self.sample.config.int_std)
             intensity[intensity < 0] = 0.0
 
         return intensity
+
+
+def simulate_data_matrix(specs: list[SimulatedLCMSAdductSpec], samples: list[Sample]) -> DataMatrix:
+    """Create a data matrix using LC-MS simulation specs.
+
+    :param specs: a list of adduct specifications to simulate features.
+    :param samples: the list of samples to include in the matrix.
+    :return: the simulated data matrix
+
+    """
+    if not samples:
+        raise ValueError("At least one sample is required to simulate a data matrix.")
+
+    # sorting samples by order is required to compute intra-batch effects
+    samples = sorted(samples, key=lambda x: x.meta.order)
+
+    X = _compute_matrix_values(specs, samples)
+    feature_groups = _compute_feature_groups(specs)
+
+    return DataMatrix(samples, feature_groups, X)
+
+
+def _compute_matrix_values(specs: list[SimulatedLCMSAdductSpec], samples: list[Sample]) -> FloatArray:
+    n_features = sum(x.n_isotopologues for x in specs)
+    n_samples = len(samples)
+    X = numpy.zeros(shape=(n_samples, n_features), dtype=float)
+
+    first_sample = samples[0]
+    previous_sample_batch = first_sample.meta.batch
+    batch_start_at = first_sample.meta.order
+
+    for k, sample in enumerate(samples):
+        row = list()
+
+        if previous_sample_batch != sample.meta.batch:
+            batch_start_at = sample.meta.order
+            previous_sample_batch = sample.meta.batch
+        intra_batch_order = sample.meta.order - batch_start_at
+
+        for spec in specs:
+            row.extend(
+                spec.compute_intensity(
+                    group=sample.meta.group,
+                    order=intra_batch_order,
+                    batch=sample.meta.batch,
+                )
+            )
+        X[k] = row
+    return X
+
+
+def _compute_feature_groups(specs: list[SimulatedLCMSAdductSpec]) -> list[FeatureGroup]:
+    feature_groups = list()
+    group_counter = 0
+
+    for isotopologue_group, spec in enumerate(specs):
+        for isotopologue_index, ft in enumerate(spec.create_simulated_features()):
+            ann = GroupAnnotation(
+                label=group_counter,
+                isotopologue_group=isotopologue_group,
+                isotopologue_index=isotopologue_index,
+                charge=spec.charge,
+            )
+
+            descriptors = {"mz": ft.mz, "rt": ft.rt}
+            group = FeatureGroup(group=group_counter, annotation=ann, descriptors=descriptors)
+            feature_groups.append(group)
+            group_counter += 1
+    return feature_groups

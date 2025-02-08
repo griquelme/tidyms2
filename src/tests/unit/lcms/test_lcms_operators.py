@@ -8,14 +8,13 @@ from tidyms2.storage.memory import OnMemorySampleStorage
 
 @pytest.fixture
 def sample(lcms_sample_factory) -> Sample:
-    return lcms_sample_factory(id="sample")
+    return lcms_sample_factory("sample")
 
 
 @pytest.fixture
-def n_features(sample: Sample) -> int:
-    assert sample.meta is not None
-    # simulated samples will contain this meta field
-    return len(sample.meta.features)  # type: ignore
+def n_features(lcms_sample_factory) -> int:
+    sample_spec = lcms_sample_factory.create_simulated_sample_spec()
+    return len(sample_spec.features)
 
 
 @pytest.fixture

@@ -6,12 +6,11 @@ import pytest
 from tidyms2.algorithms import raw
 from tidyms2.core.models import Chromatogram, MSSpectrum, Sample
 from tidyms2.io import MSData
-from tidyms2.simulation.lcms import SimulatedLCMSSample
 
 
 @pytest.fixture
 def sample(lcms_sample_factory) -> Sample:
-    return lcms_sample_factory(id="sample")
+    return lcms_sample_factory("sample")
 
 
 @pytest.fixture
@@ -20,9 +19,8 @@ def ms_data(sample: Sample):
 
 
 @pytest.fixture
-def mz_list(sample: Sample) -> list[float]:
-    assert sample.meta is not None
-    sample_spec = SimulatedLCMSSample(**sample.meta.model_dump())
+def mz_list(lcms_sample_factory) -> list[float]:
+    sample_spec = lcms_sample_factory.create_simulated_sample_spec("default", 0)
     return list(sample_spec.make_grid())
 
 
