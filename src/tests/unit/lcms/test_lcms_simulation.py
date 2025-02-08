@@ -4,37 +4,36 @@ import pytest
 from tidyms2.core.models import MSSpectrum
 from tidyms2.io import MSData
 from tidyms2.simulation import lcms
+from tidyms2.simulation.base import DataAcquisitionSpec, MZGridSpec
 
-
-@pytest.fixture
-def factory_with_grid(lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
-    lcms_sample_factory.config.grid = lcms.MZGridSpecification()
-    return lcms_sample_factory
+from ..helpers import create_sample
 
 
 class TestSimulatedLCMSSample:
     def test_make_grid_no_spec_ok(self, lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
-        sample = lcms_sample_factory(id="sample")
-        assert sample.meta is not None
-        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
+        features = lcms_sample_factory.create_features()
+        simulated_sample_spec = lcms.SimulatedLCMSSample(
+            config=lcms_sample_factory.data_acquisition, features=features
+        )
         grid = simulated_sample_spec.make_grid()
         assert grid.size == len(simulated_sample_spec.features)
         assert np.all(np.diff(grid) > 0.0)
 
-    def test_make_grid_with_spec(self, factory_with_grid: lcms.SimulatedLCMSSampleFactory):
-        sample = factory_with_grid(id="sample")
-        assert sample.meta is not None
-        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
+    def test_make_grid_with_spec(self, lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
+        lcms_sample_factory.data_acquisition.grid = MZGridSpec()
+        features = lcms_sample_factory.create_features()
+        simulated_sample_spec = lcms.SimulatedLCMSSample(
+            config=lcms_sample_factory.data_acquisition, features=features
+        )
         grid = simulated_sample_spec.make_grid()
         assert simulated_sample_spec.config.grid is not None
         assert grid.size == simulated_sample_spec.config.grid.size
         assert np.all(np.diff(grid) > 0.0)
 
     def test_make_grid_no_features_return_empty_array(self):
-        factory = lcms.SimulatedLCMSSampleFactory()
-        sample = factory(id="sample")
-        assert sample.meta is not None
-        simulated_sample_spec = lcms.SimulatedLCMSSample(**sample.meta.model_dump())
+        config = DataAcquisitionSpec()
+        features = list()
+        simulated_sample_spec = lcms.SimulatedLCMSSample(config=config, features=features)
         grid = simulated_sample_spec.make_grid()
         assert grid.size == 0
 
@@ -42,7 +41,7 @@ class TestSimulatedLCMSSample:
 class TestSimulatedMSData:
     @pytest.fixture(scope="class")
     def data(self, lcms_sample_factory: lcms.SimulatedLCMSSampleFactory):
-        sample = lcms_sample_factory(id="sample")
+        sample = lcms_sample_factory("sample")
         return MSData(sample)
 
     def test_get_spectrum(self, data: MSData):
@@ -65,3 +64,16 @@ class TestSimulatedMSData:
         sp1 = data.get_spectrum(index)
         sp2 = data.get_spectrum(index)
         assert sp1 is sp2
+
+
+class TestSimulateDataMatrix:
+    def test_no_samples_raise_error(self, lcms_adducts):
+        samples = list()
+        with pytest.raises(ValueError):
+            lcms.simulate_data_matrix(lcms_adducts, samples)
+
+    def test_no_features_raise_error(self):
+        samples = [create_sample(create_file=False)]
+        lcms_adducts = list()
+        with pytest.raises(ValueError):
+            lcms.simulate_data_matrix(lcms_adducts, samples)

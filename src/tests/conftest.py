@@ -36,13 +36,23 @@ def raw_data_dir(data_dir: pathlib.Path) -> pathlib.Path:
 
 
 @pytest.fixture(scope="module")
-def lcms_sample_factory():
-    config = lcms.SimulatedLCMSDataConfiguration(min_signal_intensity=1.0, n_scans=40, amp_noise=0.0)
+def lcms_adducts():
     formula_list = ["[C54H104O6]+", "[C27H40O2]+", "[C24H26O12]+"]
     rt_list = [10.0, 20.0, 30.0]
-    int_list = [1000.0, 2000.0, 3000.0]
+    abundances = [1000.0, 2000.0, 3000.0]
     adduct_list = list()
-    for rt, spint, formula in zip(rt_list, int_list, formula_list):
-        adduct = lcms.SimulatedLCMSAdductSpec(formula=formula, rt_mean=rt, base_intensity=spint, n_isotopologues=2)
+    for rt, abundance, formula in zip(rt_list, abundances, formula_list):
+        adduct = lcms.SimulatedLCMSAdductSpec(
+            formula=formula,
+            rt_mean=rt,
+            abundance={"mu": abundance},  # type: ignore
+            n_isotopologues=2,
+        )
         adduct_list.append(adduct)
-    return lcms.SimulatedLCMSSampleFactory(config=config, adducts=adduct_list)
+    return adduct_list
+
+
+@pytest.fixture(scope="module")
+def lcms_sample_factory(lcms_adducts):
+    config = lcms.DataAcquisitionSpec(min_int=1.0, n_scans=40, int_std=0.0)
+    return lcms.SimulatedLCMSSampleFactory(data_acquisition=config, adducts=lcms_adducts)
