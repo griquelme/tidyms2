@@ -191,13 +191,32 @@ class DummyDescriptorPatcher(DescriptorPatcher):
         pass
 
 
-def create_sample(path: Path, suffix: int, group: str = "", create_file: bool = True) -> models.Sample:
-    file = path / f"sample-{suffix}.mzML"
+def create_sample(
+    path: Path | None = None,
+    suffix: int = 0,
+    group: str = "",
+    order: int | None = None,
+    batch: int = 0,
+    create_file: bool = True,
+) -> models.Sample:
+    """Create a sample model.
+
+    :param path: path to the sample. If ``None`` is used, then the current working directory is used.
+    :param suffix: a suffix added to the sample name. Samples are named using `sample-{suffix}`.
+    :param group: sample group passed to sample metadata.
+    :param order: sample run order passed to sample metadata. If not defined, the `suffix` parameter
+        is used.
+    :param batch: the analytical batch passed to sample metadata.
+    :param create_file: if set to ``True``, touch the file path.
+
+    """
+    file = (path or Path.cwd()) / f"sample-{suffix}.mzML"
     if create_file:
         file.touch()
     sample = models.Sample(path=file, id=file.stem)
     sample.meta.group = group
-    sample.meta.order = suffix
+    sample.meta.order = order or suffix
+    sample.meta.batch = batch
     return sample
 
 
