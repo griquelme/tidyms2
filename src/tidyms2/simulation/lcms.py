@@ -45,7 +45,11 @@ class SimulatedLCMSDataReader:
 
 
 class SimulatedLCMSSampleFactory(pydantic.BaseModel):
-    """Utility that creates simulated data samples."""
+    """Utility that creates simulated data samples.
+
+    Refer to the :ref:`simulation-guide` guide for a tutorial on how to use this class.
+
+    """
 
     data_acquisition: DataAcquisitionSpec = DataAcquisitionSpec()
     """The sample configuration used to simulate data."""
@@ -55,6 +59,8 @@ class SimulatedLCMSSampleFactory(pydantic.BaseModel):
 
     def __call__(self, id: str, group: str | None = None, order: int = 0, **kwargs) -> Sample:
         """Create a :py:class:`~tidyms2.core.models.Sample` with simulated data specs.
+
+        Refer to the :ref:`simulation-guide` guide for a tutorial on how to use this function.
 
         :param id: the id for the sample
         :param kwargs: extra sample information passed to the :py:class:`tidyms2.Sample` constructor.
@@ -224,6 +230,8 @@ class MSSpectrumFactory:
 
 def simulate_data_matrix(specs: list[SimulatedLCMSAdductSpec], samples: list[Sample]) -> DataMatrix:
     """Create a data matrix using LC-MS simulation specs.
+
+    Refer to the :ref:`matrix-simulation-guide` guide for a tutorial on how to use this function.
 
     :param specs: a list of adduct specifications to simulate features.
     :param samples: the list of samples to include in the matrix.

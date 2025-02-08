@@ -44,8 +44,8 @@ def lcms_adducts():
     for rt, abundance, formula in zip(rt_list, abundances, formula_list):
         adduct = lcms.SimulatedLCMSAdductSpec(
             formula=formula,
-            rt_mean=rt,
-            abundance={"mu": abundance},  # type: ignore
+            rt={"mean": rt},  # type: ignore
+            abundance={"mean": abundance},  # type: ignore
             n_isotopologues=2,
         )
         adduct_list.append(adduct)
@@ -54,5 +54,5 @@ def lcms_adducts():
 
 @pytest.fixture(scope="module")
 def lcms_sample_factory(lcms_adducts):
-    config = lcms.DataAcquisitionSpec(min_int=1.0, n_scans=40, int_std=0.0)
+    config = lcms.DataAcquisitionSpec(n_scans=40, int_std=0.0)
     return lcms.SimulatedLCMSSampleFactory(data_acquisition=config, adducts=lcms_adducts)

@@ -45,6 +45,9 @@ Glossary
     ROI
         Region of Interest. A region extracted from a raw data file which may contain features.
 
+    Rt
+        The retention time of a chromatographic peak
+
     sample
         And individual experimental measurement
 
