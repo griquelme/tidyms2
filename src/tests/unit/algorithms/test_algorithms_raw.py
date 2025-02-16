@@ -903,6 +903,12 @@ class TestCombineSeedCandidates:
         candidates = raw._combine_seed_candidates(mz, params)
         assert len(candidates) == 0
 
+    def test_length_one_ok(self):
+        mz = np.array([0.001])
+        params = raw.MakeRoiParameters(tolerance=0.005)
+        candidates = raw._combine_seed_candidates(mz, params)
+        assert len(candidates) == 1
+
     def test_combine_ok_case1(self):
         mz = np.array([0.001, 0.002, 0.003, 0.5, 0.8, 0.801, 0.802])
         params = raw.MakeRoiParameters(tolerance=0.005)
