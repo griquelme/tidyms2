@@ -3,7 +3,7 @@
 
 .PHONY: dev-install
 dev-install: .venv
-	uv pip install .[dev,docs] && uv run pre-commit install
+	uv sync --all-extras && uv run pre-commit install
 
 .PHONY: clean
 clean:
