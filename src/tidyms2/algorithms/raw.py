@@ -790,13 +790,17 @@ def _compute_roi_seeds(ms_data: MSData, params: MakeRoiParameters) -> FloatArray
 
 
 def _combine_seed_candidates(mz: np.ndarray, params: MakeRoiParameters) -> FloatArray1D:
+    N = mz.size
+
+    if N == 0:
+        return np.array([], dtype=mz.dtype)
+
     mz_cumsum = np.cumsum(mz)
     mz2_cumsum = np.cumsum(mz**2)
     start, end = 0, 0
     seed_list = list()
 
     var_thresh = params.tolerance**2
-    N = mz.size
     previous_mean = 0.0
     previous_var = 0.0
     while end <= N:
@@ -812,7 +816,7 @@ def _combine_seed_candidates(mz: np.ndarray, params: MakeRoiParameters) -> Float
             end += 1
         previous_mean, previous_var = slice_mean, slice_var
 
-    if 0.0 < previous_var < var_thresh:
+    if 0.0 <= previous_var < var_thresh:
         seed_list.append(previous_mean)
 
     return np.array(seed_list)
