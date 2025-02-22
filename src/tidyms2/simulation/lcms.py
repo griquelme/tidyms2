@@ -7,7 +7,6 @@ import random
 
 import numpy
 import pydantic
-from typing_extensions import Self
 
 from ..core.matrix import DataMatrix
 from ..core.models import Chromatogram, FeatureGroup, GroupAnnotation, MSSpectrum, Sample, SampleMetadata
@@ -103,18 +102,6 @@ class SimulatedLCMSSample(pydantic.BaseModel):
         else:
             grid = self.config.grid.create()
         return grid
-
-    @classmethod
-    def from_json(cls, path: pathlib.Path) -> Self:
-        """Create a new instance from a JSON file."""
-        with path.open("rt") as f:
-            model_json = f.read()
-        return cls.model_validate_json(model_json)
-
-    def to_json(self, path: pathlib.Path):
-        """Store the model as a JSON file."""
-        with path.open("wt") as f:
-            f.write(self.model_dump_json())
 
 
 class RtSpec(pydantic.BaseModel):

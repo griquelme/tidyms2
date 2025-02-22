@@ -62,9 +62,9 @@ class MZGridSpec(pydantic.BaseModel):
 class AbundanceSpec(pydantic.BaseModel):
     """Define the abundance of a chemical species in a sample.
 
-    The abundance using a two step process:
+    The abundance is computed as follows:
 
-    1.  draw a value :math:`u` from the uniform distribution :math:[0, 1].
+    1.  draw a value :math:`u` from the uniform distribution :math:`[0, 1]`.
     2.  If :math:`u` is lower than the `prevalence` field, set the abundance to zero.
     3.  Otherwise, set the abundance to a value sampled from a gaussian distribution.
 
@@ -87,41 +87,69 @@ class AbundanceSpec(pydantic.BaseModel):
 
 
 class MeasurementNoiseSpec(pydantic.BaseModel):
-    """Define an additive error added to the measured signal of an adduct."""
+    r"""Define an additive error term added to the measured signal of an adduct.
 
-    snr: pydantic.PositiveFloat | None = None
+    The noise for a sample is computed as follows:
+
+    1.  compute the :term:`snr` using the `base_snr` field and the isotopologue abundance as a
+        scaling factor. Set the :term:`snr` to the maximum value between this value and the `min_snr`
+        field.
+    2.  Compute the noise level :math:`\sigma:` as the quotient between the signal and the :term:`snr`.
+    3.  Sample the noise from a distribution :math:`~N(0, \sigma)`
+
+    """
+
+    base_snr: pydantic.PositiveFloat | None = None
     """The base :term:`snr` of the additive noise applied to isotopologue signal"""
 
-    max_snr: pydantic.PositiveFloat = 10.0
-    """The maximum :term:`snr` of the additive noise applied to isotopologues signal. This value allows
+    min_snr: pydantic.PositiveFloat = 10.0
+    """The minimum :term:`snr` of the additive noise applied to isotopologues signal. This value allows
     to set a lower bound on the :term:`snr` for low intensity features. If the `snr` parameter is
     not set, this value is ignored."""
 
-    def sample_noise(self, signal: float, isotopologue_abundance: float) -> float:
-        """Compute the noise for a signal.
+    @pydantic.model_validator(mode="after")
+    def _ensure_snr_geq_min_snr(self):
+        if self.base_snr is not None and self.base_snr < self.min_snr:
+            raise ValueError("`snr` field must be greater or equal than `min_snr`.")
+        return self
 
-        :param signal: the observed signal, computed according the response specification
-        :param isotopologue_abundance: the relative abundance of an isotopologue, used to scale
-            the :term:`snr` for isotopologues with lower signals.
+    def compute_snr(self, pk: float) -> float | None:
+        """Compute the :term:`snr` level for an isotopologue signal.
+
+        :param pk: the isotopologue relative abundance, used to scale the base :term:`snr`
 
         """
-        if self.snr is None:
-            return 0.0
-        snr = max(self.max_snr, self.snr / isotopologue_abundance)
-        return random.gauss(sigma=signal / snr)
+        return None if self.base_snr is None else max(self.min_snr, self.base_snr * pk)
+
+    def sample_noise(self, signal: float, pk: float) -> float:
+        """Draw a noise term sample for an isotopologue signal.
+
+        :param signal: the observed signal, as the product of the instrument
+            response, the base abundance and the isotopologue relative abundance.
+        :param pk: the relative abundance of an isotopologue, used to scale the :term:`snr`
+            for isotopologues with lower signals.
+
+        """
+        snr = self.compute_snr(pk)
+        return 0.0 if snr is None else random.gauss(sigma=signal / snr)
 
 
 class InstrumentResponseSpec(pydantic.BaseModel):
     r"""Define the instrument response factor for an adduct.
 
+    Computed as the product of the base response factor, the inter-batch effect factor
+    and the sensitivity loss factor.
+
     The default parameters of this specification will generate a response factor without
     sensitivity loss over time and no additive noise.
+
+    Refer to the :ref:`simulation-guide` for more details.
     """
 
     model_config = pydantic.ConfigDict(frozen=True)
 
-    response_factor: pydantic.PositiveFloat = 1.0
-    """The adduct instrumental response factor."""
+    base_response_factor: pydantic.PositiveFloat = 1.0
+    """The adduct base response when no inter-batch or sensitivity loss effects are present."""
 
     max_sensitivity_loss: float = pydantic.Field(ge=0.0, le=1.0, default=0.0)
     """The maximum sensitive loss in an analytical batch."""
@@ -134,22 +162,31 @@ class InstrumentResponseSpec(pydantic.BaseModel):
     """
 
     interbatch_variation: float = pydantic.Field(ge=0.0, le=1.0, default=1.0)
-    """A factor applied to all samples from the same analytical batch."""
+    """A factor applied to all samples from the same analytical batch. The interbatch
+    variation factor is random but equal for all observations within a batch. The value
+    for a given batch is samples from a uniform distribution with minimum value equal to
+    this parameter and maximum value equal to ``1.0``. In the default configuration the
+    inter-batch factor is set to ``1.0`` always."""
 
     @cache
-    def _get_interbatch_factor(self, batch: int) -> float:
+    def get_interbatch_factor(self, batch: int) -> float:
         return random.uniform(self.interbatch_variation, 1.0)
 
-    def compute_response(self, order: int, abundance: float, batch: int) -> float:
-        """Compute the measured spectral intensity.
+    def get_sensitivity_loss_factor(self, order: int) -> float:
+        """Compute the sensitivity loss factor applied to the base response."""
+        sensitivity_decay = self.max_sensitivity_loss * exp(-order * self.sensitivity_decay)
+        return 1 - self.max_sensitivity_loss + sensitivity_decay
 
-        :param abundance: the base abundance of an isotopologue.
+    def compute_response_factor(self, order: int, batch: int) -> float:
+        """Compute the response factor for a specific sample run order and analytical batch.
+
+        :param order: the relative run order within a batch.
+        :param batch: the analytical batch number
 
         """
-        sensitivity_decay = self.max_sensitivity_loss * exp(-order * self.sensitivity_decay)
-        sensitivity_loss = 1 - self.max_sensitivity_loss + sensitivity_decay
-        interbatch_factor = self._get_interbatch_factor(batch)
-        return abundance * self.response_factor * sensitivity_loss * interbatch_factor
+        interbatch_factor = self.get_interbatch_factor(batch)
+        sensitivity_loss = self.get_sensitivity_loss_factor(order)
+        return self.base_response_factor * sensitivity_loss * interbatch_factor
 
 
 class BaseChemicalSpeciesSpec(pydantic.BaseModel):
@@ -157,11 +194,11 @@ class BaseChemicalSpeciesSpec(pydantic.BaseModel):
 
     .. math::
 
-        x = c * p_{j} * f + \epsilon
+        x_{j} = c * p_{j} * f + \epsilon
 
-    Where :math:`x` is the signal intensity, :math:`c` is the abundance of the species
-    that generates the adducts, :math:`p_{j}` is the abundance of the j-th isotopologue
-    included in the simulation, :math:`f` is the response factor of the instrument
+    Where :math:`x_{j}` is the signal intensity for the j-th isotopologue, :math:`c` is the
+    abundance of the species that generates the adducts, :math:`p_{j}` is the abundance of the
+    j-th isotopologue included in the simulation, :math:`f` is the response factor of the instrument
     and :math:`epsilon` is an additive error term.
 
     """
@@ -222,11 +259,12 @@ class BaseChemicalSpeciesSpec(pydantic.BaseModel):
         return [(Mk - self.charge * EM) / abs(self.charge) for Mk in self._envelope.mz]
 
     def compute_intensity(self, group: str | None = None, order: int = 0, batch: int = 0) -> list[float]:
-        """Compute a realization of features intensity for a sample."""
+        """Compute a realization of features intensity all isotopologues."""
         c = self.compute_abundance(group)
         intensity = list()
         for pk in self._envelope.p:
-            signal = self.response.compute_response(order, c * pk, batch)
+            f = self.response.compute_response_factor(order, batch)
+            signal = c * f * pk
             noise = self.noise.sample_noise(signal, pk)
             x = max(0.0, signal + noise)  # force intensity to be non-negative
             intensity.append(x)
