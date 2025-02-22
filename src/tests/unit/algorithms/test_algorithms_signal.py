@@ -5,7 +5,7 @@ from scipy.signal.windows import gaussian
 from scipy.special import erfc
 
 from tidyms2.algorithms import signal
-from tidyms2.utils.numpy import gaussian_mixture
+from tidyms2.core.utils.numpy import gaussian_mixture
 
 SEED = 1234
 

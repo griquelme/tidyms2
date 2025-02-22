@@ -11,7 +11,7 @@ import pydantic
 
 from ..chem import EM, Formula
 from ..core.models import IsotopicEnvelope
-from ..utils.numpy import FloatArray1D
+from ..core.utils.numpy import FloatArray1D
 
 
 class DataAcquisitionSpec(pydantic.BaseModel):

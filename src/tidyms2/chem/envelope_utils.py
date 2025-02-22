@@ -9,7 +9,7 @@ import numpy as np
 import pydantic
 from scipy.stats import multinomial
 
-from ..utils.numpy import FloatArray, FloatArray1D, IntArray1D, cartesian_product_from_iterable
+from ..core.utils.numpy import FloatArray, FloatArray1D, IntArray1D, cartesian_product_from_iterable
 from .atoms import Element, Isotope
 
 

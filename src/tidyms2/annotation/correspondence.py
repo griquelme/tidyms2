@@ -12,7 +12,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.mixture import GaussianMixture
 
 from ..core.models import Annotation, AnnotationPatch, Sample
-from ..utils.numpy import FloatArray, IntArray1D
+from ..core.utils.numpy import FloatArray, IntArray1D
 
 
 class FeatureCorrespondenceParameters(pydantic.BaseModel):

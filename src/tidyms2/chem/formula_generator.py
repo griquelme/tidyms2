@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pydantic
 
-from ..utils.numpy import IntArray, cartesian_product_from_ranges
+from ..core.utils.numpy import IntArray, cartesian_product_from_ranges
 from .atoms import Isotope
 from .config import FormulaGeneratorConfiguration
 from .context import PTABLE

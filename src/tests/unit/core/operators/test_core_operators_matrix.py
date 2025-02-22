@@ -6,7 +6,7 @@ from tidyms2.core.enums import MSInstrument, Polarity, SeparationMode
 from tidyms2.core.exceptions import EmptyDataMatrix
 from tidyms2.core.matrix import DataMatrix, FeatureVector, SampleVector
 from tidyms2.core.operators.matrix import ColumnFilter, ColumnTransformer, MatrixTransformer, RowFilter, RowTransformer
-from tidyms2.utils.numpy import FloatArray
+from tidyms2.core.utils.numpy import FloatArray
 
 from ...helpers import create_data_matrix
 

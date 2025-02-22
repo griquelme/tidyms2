@@ -7,10 +7,10 @@ from typing import Generator, Sequence
 import numpy
 import pydantic
 
-from ..utils.numpy import FloatArray, FloatArray1D
 from . import exceptions
 from .dataflow import DataMatrixProcessStatus
 from .models import FeatureGroup, Sample
+from .utils.numpy import FloatArray, FloatArray1D
 
 
 class DataMatrix:

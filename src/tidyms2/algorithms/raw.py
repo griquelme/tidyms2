@@ -12,8 +12,8 @@ from scipy.interpolate import interp1d
 
 from ..core.enums import MSDataMode
 from ..core.models import Chromatogram, MSSpectrum, MZTrace, Sample
+from ..core.utils.numpy import FloatArray1D, IntArray1D, find_closest
 from ..io.msdata import MSData
-from ..utils.numpy import FloatArray1D, IntArray1D, find_closest
 
 
 class BaseRawMsFunctionParameter(pydantic.BaseModel):

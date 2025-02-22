@@ -6,7 +6,7 @@ from sklearn.cluster import DBSCAN
 
 from tidyms2.annotation import correspondence
 from tidyms2.core.models import Annotation, AnnotationPatch, Sample
-from tidyms2.utils.common import create_id
+from tidyms2.core.utils.common import create_id
 
 
 @pytest.mark.parametrize(

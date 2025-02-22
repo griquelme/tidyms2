@@ -2,7 +2,7 @@ import numpy as np
 import pydantic
 import pytest
 
-from tidyms2.utils.numpy import FloatArray, IntArray, find_closest
+from tidyms2.core.utils.numpy import FloatArray, IntArray, find_closest
 
 
 class NumpyFloatModel(pydantic.BaseModel):

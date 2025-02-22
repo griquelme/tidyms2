@@ -3,8 +3,8 @@ import pytest
 from tidyms2.core import exceptions
 from tidyms2.core.dataflow import SampleProcessStatus
 from tidyms2.core.models import AnnotationPatch, DescriptorPatch, FillValue
+from tidyms2.core.utils.common import create_id
 from tidyms2.storage import memory
-from tidyms2.utils.common import create_id
 
 from .. import helpers
 
