@@ -25,6 +25,7 @@ dev = [
     "pytest-sugar>=1.0.0",
     "pytest>=8.3.3",
     "ruff>=0.7.1",
+    "tach>=0.26.1",
 ]
 docs = [
     "autodoc-pydantic>=2.2.0",
