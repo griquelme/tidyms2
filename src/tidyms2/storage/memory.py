@@ -19,7 +19,7 @@ from ..core.models import (
 )
 from ..core.storage import SampleStorage
 from ..core.table import FeatureTable
-from ..utils.common import create_id
+from ..core.utils.common import create_id
 
 LATEST = "head"
 

@@ -3,7 +3,7 @@ import pytest
 from tidyms2.annotation import consensus
 from tidyms2.annotation.consensus import AnnotationGraph, MissingNodeError
 from tidyms2.core.models import Annotation
-from tidyms2.utils.common import create_id
+from tidyms2.core.utils.common import create_id
 
 
 def create_annotation(**kwargs) -> Annotation:

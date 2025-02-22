@@ -4,10 +4,10 @@ from sqlalchemy.exc import IntegrityError
 from tidyms2.core import exceptions
 from tidyms2.core.dataflow import AssayProcessStatus
 from tidyms2.core.models import AnnotationPatch, DescriptorPatch, FillValue
+from tidyms2.core.utils.common import create_id
 from tidyms2.storage import sqlite
 from tidyms2.storage.memory import OnMemorySampleStorage
 from tidyms2.storage.sqlite.assay import LATEST_SNAPSHOT
-from tidyms2.utils.common import create_id
 
 from .. import helpers
 from ..helpers import ConcreteFeature, ConcreteRoi

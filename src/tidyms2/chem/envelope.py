@@ -7,7 +7,7 @@ from typing import Callable, Sequence
 import numpy as np
 from scipy.special import erfc
 
-from ..utils.numpy import FloatArray1D
+from ..core.utils.numpy import FloatArray1D
 from .config import EnvelopeScorerConfiguration, EnvelopeValidatorConfiguration
 from .context import DEFAULT_CONTEXT, ChemicalContext
 from .envelope_utils import (

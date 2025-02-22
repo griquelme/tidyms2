@@ -5,9 +5,9 @@ from __future__ import annotations
 import concurrent.futures
 from abc import abstractmethod
 
-from ...utils.numpy import FloatArray
 from ..dataflow import DataMatrixProcessStatus
 from ..matrix import DataMatrix, FeatureVector, SampleVector
+from ..utils.numpy import FloatArray
 from .base import BaseOperator
 
 

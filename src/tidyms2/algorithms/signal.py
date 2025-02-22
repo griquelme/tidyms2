@@ -7,7 +7,7 @@ from scipy.signal import find_peaks
 from scipy.special import erfc
 from scipy.stats import median_abs_deviation as mad
 
-from ..utils.numpy import FloatArray1D, IntArray1D
+from ..core.utils.numpy import FloatArray1D, IntArray1D
 
 
 def detect_peaks(

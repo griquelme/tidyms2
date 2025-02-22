@@ -10,8 +10,8 @@ import pydantic
 
 from ..core.matrix import DataMatrix
 from ..core.models import Chromatogram, FeatureGroup, GroupAnnotation, MSSpectrum, Sample, SampleMetadata
+from ..core.utils.numpy import FloatArray, FloatArray1D
 from ..io.reader import reader_registry
-from ..utils.numpy import FloatArray, FloatArray1D
 from .base import BaseChemicalSpeciesSpec, DataAcquisitionSpec
 
 

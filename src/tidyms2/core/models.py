@@ -20,9 +20,9 @@ from uuid import UUID
 import numpy
 import pydantic
 
-from ..utils.common import create_id
-from ..utils.numpy import FloatArray1D, IntArray1D
 from .enums import MSDataMode
+from .utils.common import create_id
+from .utils.numpy import FloatArray1D, IntArray1D
 
 
 class TidyMSBaseModel(pydantic.BaseModel):
