@@ -18,8 +18,8 @@ from ..core.models import (
     Sample,
 )
 from ..core.storage import SampleStorage
-from ..core.table import FeatureTable
 from ..core.utils.common import create_id
+from .table import FeatureTable
 
 LATEST = "head"
 

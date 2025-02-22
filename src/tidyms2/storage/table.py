@@ -3,8 +3,8 @@
 from typing import Iterable
 from uuid import UUID
 
-from .exceptions import FeatureGroupNotFound, FeatureNotFound, SampleNotFound
-from .models import Annotation, AnnotationPatch, DescriptorPatch, FeatureGroup
+from ..core.exceptions import FeatureGroupNotFound, FeatureNotFound, SampleNotFound
+from ..core.models import Annotation, AnnotationPatch, DescriptorPatch, FeatureGroup
 
 
 class FeatureTable:
