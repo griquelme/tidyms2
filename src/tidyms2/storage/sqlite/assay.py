@@ -20,8 +20,8 @@ from ...core.models import (
     Sample,
 )
 from ...core.storage import SampleStorage
-from ...core.table import FeatureTable
 from ..memory import OnMemorySampleStorage
+from ..table import FeatureTable
 from .models import (
     AnnotationModel,
     AnnotationPatchModel,
