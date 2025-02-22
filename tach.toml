@@ -1,0 +1,46 @@
+interfaces = []
+exclude = [
+    "**/*__pycache__",
+    "**/*egg-info",
+    "**/docs",
+    "**/tests",
+    "**/venv",
+]
+source_roots = [ "src/tidyms2",
+]
+
+[[modules ]]
+path = "core"
+depends_on = []
+
+[[modules ]]
+path = "lcms"
+depends_on = ["storage", "io", "assay", "core", "annotation", "algorithms"]
+
+[[modules ]]
+path = "chem"
+depends_on = ["core"]
+
+[[modules ]]
+path = "simulation"
+depends_on = ["io", "chem", "core"]
+
+[[modules ]]
+path = "annotation"
+depends_on = ["chem", "core"]
+
+[[modules ]]
+path = "io"
+depends_on = ["core"]
+
+[[modules ]]
+path = "algorithms"
+depends_on = ["io", "core"]
+
+[[modules ]]
+path = "assay"
+depends_on = ["annotation", "core", "storage"]
+
+[[modules ]]
+path = "storage"
+depends_on = ["core"]
