@@ -13,6 +13,9 @@ Glossary
     consensus annotation
         the process of combining the annotation of features in a group into a single annotation
 
+    DBSCAN
+        Density-based spatial clustering of applications with noise.
+
     data matrix
         A table containing extracted data from chemical species in wide format, i.e., each
         row of the matrix is associated with a sample and each column is associated with

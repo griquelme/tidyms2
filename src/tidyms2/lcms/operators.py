@@ -196,8 +196,7 @@ class LCFeatureMatcher(AnnotationPatcher, FeatureCorrespondenceParameters):
     clusters are further processed using a GMM approach, obtaining clusters where each sample
     contributes with only one sample.
 
-    See the :ref:`user guide <ft-correspondence>` for a detailed description of
-    the algorithm.
+    See the :ref:`algorithms-correspondence` guide for a detailed description of the algorithm.
 
     """
 
