@@ -102,7 +102,7 @@ def match_features(
     min_samples = _estimate_dbscan_min_sample(samples_per_group, include_groups, params.min_fraction)
     max_size = 100000
     eps = tolerance[argmin]
-    cluster = _cluster_dbscan(X, eps, min_samples, max_size)
+    cluster = cluster_dbscan(X, eps, min_samples, max_size)
 
     # estimate the number of species per DBSCAN cluster
     species_per_cluster = _estimate_gmm_n_components(
@@ -146,30 +146,21 @@ def _estimate_dbscan_min_sample(
     return min_samples
 
 
-def _cluster_dbscan(X: np.ndarray, eps: float, min_samples: int, max_size: int) -> np.ndarray:
+def cluster_dbscan(X: np.ndarray, eps: float, min_samples: int, max_size: int) -> np.ndarray:
     """Cluster rows of X using the DBSCAN algorithm.
 
-    X is split into chunks to reduce memory usage. The split is done in a way
-    such that the solution obtained is the same as the solution using X.
+    `X` is split into chunks to reduce memory usage. The split is done in a way
+    such that the solution obtained is the same as the solution using `X`.
 
     Auxiliary function to match_features.
 
-    Parameters
-    ----------
-    X : array
-        m/z and rt values for each feature
-    eps : float
-        Used to build epsilon parameter of DBSCAN
-    min_samples : int
-        parameter to pass to DBSCAN
-    max_size : int
-        maximum number of rows in X. If the number of rows is greater than
+    :param X: m/z and rt values for each feature
+    :param eps: Used to build epsilon parameter of DBSCAN
+    :param min_samples: parameter to pass to DBSCAN
+    :param max_size: maximum number of rows in X. If the number of rows is greater than
         this value, the data is processed in chunks to reduce memory usage.
 
-    Returns
-    -------
-    cluster : Series
-        The assigned cluster by DBSCAN
+    :return: the assigned cluster by DBSCAN
 
     """
     n_rows = X.shape[0]
@@ -303,7 +294,7 @@ def _get_cluster_iterator(
             yield X_c, samples_c, n_species, index
 
 
-def _process_cluster(
+def split_cluster_gmm(
     X_c: np.ndarray, samples_c: np.ndarray, n_species: int, max_deviation: float
 ) -> tuple[np.ndarray, np.ndarray]:
     """Process each cluster using GMM.
@@ -378,7 +369,7 @@ def _get_deviation(X: np.ndarray, covariances_: np.ndarray, means_: np.ndarray) 
 def _split_cluster_worker(args, max_deviation):
     """Worker used to parallelize feature clustering."""
     Xc, samples_c, n_ft, index = args
-    label_c, score = _process_cluster(Xc, samples_c, n_ft, max_deviation)
+    label_c, score = split_cluster_gmm(Xc, samples_c, n_ft, max_deviation)
     return label_c, score, index, n_ft
 
 

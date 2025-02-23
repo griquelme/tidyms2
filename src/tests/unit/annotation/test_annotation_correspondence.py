@@ -20,7 +20,7 @@ def test_cluster_db_scan_solution_is_equal_to_sklearn_solution(n_sample, n_clust
 
     eps = 0.1
     min_samples = round(n_sample * 0.2)
-    test_cluster = correspondence._cluster_dbscan(X, eps, min_samples, max_size)
+    test_cluster = correspondence.cluster_dbscan(X, eps, min_samples, max_size)
     dbscan = DBSCAN(eps=eps, min_samples=min_samples, metric="chebyshev")
     dbscan.fit(X)
     expected_cluster = dbscan.labels_
@@ -97,7 +97,7 @@ class TestProcessCluster:
 
         n_species = 1
         max_deviation = 4
-        labels, score = correspondence._process_cluster(X, samples, n_species, max_deviation)
+        labels, score = correspondence.split_cluster_gmm(X, samples, n_species, max_deviation)
         assert np.array_equal(labels, expected)
 
     def test_two_species(self):
@@ -119,7 +119,7 @@ class TestProcessCluster:
 
         n_species = 2
         max_deviation = 4
-        labels, score = correspondence._process_cluster(X, samples, n_species, max_deviation)
+        labels, score = correspondence.split_cluster_gmm(X, samples, n_species, max_deviation)
 
         # create expected array: it is created after actual computation because
         # it is not possible to know which label is assigned to each cluster
