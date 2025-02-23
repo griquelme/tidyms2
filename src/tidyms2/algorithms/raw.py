@@ -209,7 +209,7 @@ def make_roi(data: MSData, params: MakeRoiParameters) -> list[MZTrace]:
     """Build regions of interest (ROI) from raw data.
 
     ROI are created by connecting values across scans based on the closeness in
-    m/z. See the :ref:`user guide <roi-creation>` for a description of the
+    m/z. See the :ref:`algorithms-roi-extraction` for a description of the
     algorithm used.
 
     :param data : raw data

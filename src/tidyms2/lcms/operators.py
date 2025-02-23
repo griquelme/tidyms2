@@ -27,8 +27,10 @@ class LCTraceExtractor(RoiExtractor[MZTrace, Peak], MakeRoiParameters):
     """Extracts regions-of-interest (ROI) from raw data represented as m/z traces.
 
     Traces are created by connecting values across consecutive scans based on the
-    closeness in m/z. See the :ref:`user guide <roi-creation>` for a description
-    of the algorithm used.
+    closeness in m/z.
+
+    Refer to the :ref:`processing-lcms-datasets` guide for examples on how to use this operator.
+    See the :ref:`algorithms-roi-extraction` for a description of the algorithm used.
 
     .. seealso:: lcms.MZTrace : Representation of a ROI using m/z traces.
     .. seealso:: lcms.MakeRoiParameters : Parameters used by the ROI extraction algorithm
