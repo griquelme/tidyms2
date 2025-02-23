@@ -11,3 +11,4 @@ refer to the :ref:`user-guide` or the :ref:`api`.
    :maxdepth: 1
 
    algorithms/correspondence
+   algorithms/roi-extraction
