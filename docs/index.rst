@@ -20,5 +20,6 @@ and get started with the :ref:`user-guide`
    guides
    overview
    api
+   algorithms
    glossary
    developer
