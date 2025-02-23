@@ -33,7 +33,7 @@ def test_peak_extractor(sample_storage: OnMemorySampleStorage, n_features: int):
     # perform roi extraction
     operators.LCTraceExtractor(id="mz-trace-extractor").apply(sample_storage)
 
-    op = operators.PeakExtractor(id="peak-extractor")
+    op = operators.LCPeakExtractor(id="peak-extractor")
     assert not sample_storage.get_n_features()
     op.apply(sample_storage)
     assert sample_storage.get_n_rois() == n_features

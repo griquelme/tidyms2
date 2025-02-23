@@ -80,7 +80,7 @@ class LCTraceBaselineEstimator(RoiTransformer[MZTrace, Peak]):
 
     The default values for this filter usually produce good results in most LC
     traces. Do not modify these values unless you know what you are doing.
-    See :ref:`here <peak-picking>` for a description of the noise estimation
+    See :ref:`here <algorithms-peak-extraction>` for a description of the noise estimation
     and baseline estimation algorithms.
 
     """
@@ -152,10 +152,11 @@ class LCTraceSmoother(RoiTransformer[MZTrace, Peak]):
         return cls()
 
 
-class PeakExtractor(FeatureExtractor[MZTrace, Peak]):
+class LCPeakExtractor(FeatureExtractor[MZTrace, Peak]):
     """Extract peaks from LC m/z traces.
 
-    A complete description can be found :ref:`here <feature-extraction>`.
+    A complete description of the algorithm used for peak extraction can be found
+    :ref:`here <algorithms-peak-extraction>`.
 
     """
 

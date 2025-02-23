@@ -3,7 +3,7 @@ import pytest
 from tidyms2.annotation import annotation
 from tidyms2.core.models import MZTrace
 from tidyms2.core.operators.pipeline import Pipeline
-from tidyms2.lcms import LCTraceBaselineEstimator, LCTraceExtractor, Peak, PeakExtractor
+from tidyms2.lcms import LCPeakExtractor, LCTraceBaselineEstimator, LCTraceExtractor, Peak
 from tidyms2.simulation.lcms import SimulatedLCMSSampleFactory
 from tidyms2.storage.memory import OnMemorySampleStorage
 
@@ -93,7 +93,7 @@ def peak_list() -> list[Peak]:
     pipe = Pipeline(id="annotation_pipeline")
     pipe.add_operator(LCTraceExtractor(id="roi_extractor"))
     pipe.add_operator(LCTraceBaselineEstimator(id="baseline_estimator"))
-    pipe.add_operator(PeakExtractor(id="peak_extractor"))
+    pipe.add_operator(LCPeakExtractor(id="peak_extractor"))
     pipe.apply(data)
 
     return data.list_features()

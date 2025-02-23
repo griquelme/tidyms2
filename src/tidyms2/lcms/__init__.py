@@ -2,7 +2,7 @@
 
 from .assay import create_lcms_assay
 from .models import Peak
-from .operators import LCFeatureMatcher, LCTraceBaselineEstimator, LCTraceExtractor, LCTraceSmoother, PeakExtractor
+from .operators import LCFeatureMatcher, LCPeakExtractor, LCTraceBaselineEstimator, LCTraceExtractor, LCTraceSmoother
 
 __all__ = [
     "create_lcms_assay",
@@ -11,5 +11,5 @@ __all__ = [
     "LCTraceExtractor",
     "LCTraceSmoother",
     "Peak",
-    "PeakExtractor",
+    "LCPeakExtractor",
 ]
