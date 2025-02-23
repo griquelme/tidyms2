@@ -40,3 +40,4 @@ is recommended to read them in the order listed below:
    guides/assay
    guides/lcms
    guides/simulation
+   guides/mzml

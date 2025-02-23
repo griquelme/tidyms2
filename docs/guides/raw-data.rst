@@ -3,6 +3,9 @@
 Working with raw data
 =====================
 
+TidyMS2 provides utilities to read raw data in the mzML format. Refer to :ref:`this guide <mzml-guide>`
+for details on converting files in proprietary, instrument specific formats to mzML.
+
 The first core component that we will present is :py:class:`~tidyms2.MSData`. This class provides fast
 index-based access to spectra and chromatogram data stored in a raw data file. The following code snippet
 downloads an example mzML file and creates an :py:class:`~tidyms2.MSData` using it:
