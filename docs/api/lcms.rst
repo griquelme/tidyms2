@@ -4,6 +4,7 @@ LC-MS
 =====
 
 ..   automodule:: tidyms2.lcms
+     :show-inheritance:
      :members:
           Peak,
           create_lcms_assay,
