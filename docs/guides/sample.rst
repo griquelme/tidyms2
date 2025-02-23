@@ -121,6 +121,6 @@ with a chemical species. The sample data storage classes manage ROI/feature stor
 raw data. For LC-MS data, the :py:class:`~tidyms2.lcms.MZTrace` models a ROI for LC-MS data and it is basically
 an m/z trace containing m/z and intensity values on each scan. The :py:class:`~tidyms2.lcms.Peak` models a
 chromatographic peak detected in an m/z trace. We will use the LC-MS sample operators
-:py:class:`~tidyms2.lcms.LCTraceExtractor` and :py:class:`~tidyms2.lcms.PeakExtractor` first to extract m/z traces
+:py:class:`~tidyms2.lcms.LCTraceExtractor` and :py:class:`~tidyms2.lcms.LCPeakExtractor` first to extract m/z traces
 from raw data and then detect peaks on each m/z trace:
 
