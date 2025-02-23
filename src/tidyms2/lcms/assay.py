@@ -8,7 +8,7 @@ from ..core.models import MZTrace
 from ..storage.memory import OnMemoryAssayStorage
 from ..storage.sqlite import SQLiteAssayStorage
 from .models import Peak
-from .operators import LCFeatureMatcher, LCTraceBaselineEstimator, LCTraceExtractor, PeakExtractor
+from .operators import LCFeatureMatcher, LCPeakExtractor, LCTraceBaselineEstimator, LCTraceExtractor
 
 
 def create_lcms_assay(
@@ -49,7 +49,7 @@ def create_lcms_assay(
     sample_ops = list()
     sample_ops.append(LCTraceExtractor.from_defaults(instrument, separation, polarity))
     sample_ops.append(LCTraceBaselineEstimator.from_defaults(instrument, separation, polarity))
-    sample_ops.append(PeakExtractor.from_defaults(instrument, separation, polarity))
+    sample_ops.append(LCPeakExtractor.from_defaults(instrument, separation, polarity))
     if annotate_isotopologues:
         sample_ops.append(IsotopologueAnnotator.from_defaults(instrument, separation, polarity))
 
