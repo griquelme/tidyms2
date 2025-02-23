@@ -175,6 +175,17 @@ def gaussian_mixture(x: numpy.ndarray, *gaussian_params: tuple[float, float, flo
     return components.sum(axis=0)
 
 
+def check_matrix_shape(X: NDArray) -> None:
+    """Check that the array has the expected data matrix shape."""
+    if len(X.shape) != 2:
+        raise ValueError("X must be a 2D array.")
+
+    n_rows, n_cols = X.shape
+
+    if n_rows == 0 or n_cols == 0:
+        raise ValueError(f"X must be a 2D non-empty array. Got shape {X.shape}")
+
+
 FloatDtype = TypeVar("FloatDtype", bound=floating)
 IntDtype = TypeVar("IntDtype", bound=integer)
 

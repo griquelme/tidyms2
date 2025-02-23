@@ -68,16 +68,48 @@ class SampleType(str, enum.Enum):
 
 
 class ScalingMethod(str, enum.Enum):
-    """Available feature scaling methods."""
+    """Available feature scaling methods.
+
+    All scaling methods support matrix with NaN values. NaN values will be obtained when scaling columns
+    with constant values.
+
+    """
 
     AUTOSCALING = "autoscaling"
-    """Scale features to unitary sample variance"""
+    r"""Scale features to unitary population variance:
+
+    .. math:
+
+            X_{j}^{\textrm{(scaled)}} = \frac{X_{j} - \bar{X}_{j}}{S_{j}}
+
+    where :math:`X_{j}` is the j-th column of the matrix, :math:`\bar{X}_{j}` is the column average and
+    :math:`S_{j}` is the column population standard deviation.
+
+    """
 
     PARETO = "pareto"
-    """Scale features using the square root of the sample standard deviation"""
+    r"""Mean center and scale features using the square root of the population standard deviation:
+
+    .. math:
+
+            X_{j}^{\textrm{(scaled)}} = \frac{X_{j} - \bar{X}_{j}}{\sqrt{S_{j}}}
+
+    where :math:`X_{j}` is the j-th column of the matrix, :math:`\bar{X}_{j}` is the column average and
+    :math:`S_{j}` is the column population standard deviation.
+
+    """
 
     RESCALING = "rescaling"
-    """Scale features to the range :math:`[0, 1]`"""
+    r"""Scale features to the range :math:`[0, 1]`:
+
+    .. math:
+
+            X_{j}^{\textrm{(scaled)}} = \frac{X_{j} - \min{X}_{j}}{\max{X_{j}} - \min{X_{j}}}
+
+    where :math:`X_{j}` is the j-th column of the matrix, :math:`\max{X}_{j}` is the column maximum and
+    :math:`\min{X}_{j}` is the column minimum.
+
+    """
 
 
 class NormalizationMethod(str, enum.Enum):
@@ -97,7 +129,7 @@ class NormalizationMethod(str, enum.Enum):
 
 
 class CorrelationMethod(str, enum.Enum):
-    """Avilable correlation methods."""
+    """Available correlation methods."""
 
     PEARSON = "pearson"
     """The Pearson's correlation coefficient."""
