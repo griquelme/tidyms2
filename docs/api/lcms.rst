@@ -12,5 +12,5 @@ LC-MS
           LCTraceBaselineEstimator,
           LCTraceExtractor,
           LCTraceSmoother,
-          PeakExtractor,
+          LCPeakExtractor,
      :exclude-members: model_computed_fields, model_config, model_fields

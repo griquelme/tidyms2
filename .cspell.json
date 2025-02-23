@@ -5,6 +5,8 @@
         "Annotable",
         "allclose",
         "argmin",
+        "arrowprops",
+        "arrowstyle",
         "autoclass",
         "automodule",
         "autouse",
@@ -110,6 +112,7 @@
         "xlabel",
         "xlim",
         "xticks",
+        "xytext",
         "ylabel",
         "ylim",
         "Zsuzsanna"

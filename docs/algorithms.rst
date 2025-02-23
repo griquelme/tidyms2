@@ -10,5 +10,6 @@ refer to the :ref:`user-guide` or the :ref:`api`.
 .. toctree::
    :maxdepth: 1
 
-   algorithms/correspondence
    algorithms/roi-extraction
+   algorithms/peak-extraction
+   algorithms/correspondence
