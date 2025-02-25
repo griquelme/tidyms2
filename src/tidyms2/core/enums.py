@@ -43,3 +43,25 @@ class MSDataMode(str, enum.Enum):
 
     PROFILE = "profile"
     CENTROID = "centroid"
+
+
+class SampleType(str, enum.Enum):
+    """Sample types in an untargeted metabolomics assay."""
+
+    SAMPLE = "sample"
+    """A test subject sample."""
+
+    TECHNICAL_QC = "QC"
+    """A technical QC sample"""
+
+    EXPERIMENTAL_QC = "eQC"
+    """An experimental QC sample"""
+
+    DILUTED_QC = "dQC"
+    """A diluted QC sample"""
+
+    BLANK = "blank"
+    """A blank QC sample"""
+
+    OTHER = "other"
+    """Samples that do not belong to any of the other categories."""
