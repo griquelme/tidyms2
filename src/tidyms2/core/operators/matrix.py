@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import concurrent.futures
 from abc import abstractmethod
+from multiprocessing import get_context
 
 from ..dataflow import DataMatrixProcessStatus
 from ..matrix import DataMatrix, FeatureVector, SampleVector
@@ -85,7 +86,17 @@ class RowFilter(MatrixOperator):
     def _create_remove_list(self, data: DataMatrix) -> list[str]: ...
 
 
-class ColumnTransformer(MatrixOperator):
+class MultiProcessTransformer(MatrixOperator):
+    """Abstract operator with configuration for using multiprocess transformations."""
+
+    max_workers: int | None = None
+    """the maximum number of workers subprocesses"""
+
+    spawn_context: str = "spawn"
+    """the method used to create subprocesses, passed to :py:func:`multiprocess.get_context`"""
+
+
+class ColumnTransformer(MultiProcessTransformer):
     """Transform a data matrix columns based on an arbitrary transformation.
 
     MUST implement the method `_transform_column` that takes a feature vector and creates a
@@ -96,15 +107,13 @@ class ColumnTransformer(MatrixOperator):
     exclude: list[int] | None = None
     """A list of feature groups to ignore during filtering."""
 
-    max_workers: int | None = None
-    """maximum number of workers for parallel execution"""
-
     def _apply_operator(self, data: DataMatrix) -> None:
         exclude = set() if self.exclude is None else set(self.exclude)
         include = [x.group for x in data.list_features() if x.group not in exclude]
 
         transformed: list[FeatureVector] = list()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+        mp_context = get_context(method=self.spawn_context)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers, mp_context=mp_context) as executor:
             futures = [executor.submit(self._transform_column, s) for s in data.get_columns(*include)]
             for fs in concurrent.futures.as_completed(futures):
                 transformed.append(fs.result())
@@ -115,7 +124,7 @@ class ColumnTransformer(MatrixOperator):
     def _transform_column(self, column: FeatureVector) -> FeatureVector: ...
 
 
-class RowTransformer(MatrixOperator):
+class RowTransformer(MultiProcessTransformer):
     """Transform a data matrix rows based on an arbitrary transformation.
 
     MUST implement the method `_transform_row` that takes a sample vector and creates a
@@ -126,15 +135,13 @@ class RowTransformer(MatrixOperator):
     exclude: list[str] | None = None
     """A list of sample ids to exclude from the transformation"""
 
-    max_workers: int | None = None
-    """maximum number of workers for parallel execution"""
-
     def _apply_operator(self, data: DataMatrix) -> None:
         exclude = set() if self.exclude is None else set(self.exclude)
         include = [x.id for x in data.list_samples() if x.id not in exclude]
 
         transformed: list[SampleVector] = list()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+        mp_context = get_context(method=self.spawn_context)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers, mp_context=mp_context) as executor:
             futures = [executor.submit(self._transform_row, s) for s in data.get_rows(*include)]
             for fs in concurrent.futures.as_completed(futures):
                 transformed.append(fs.result())
