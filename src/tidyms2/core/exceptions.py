@@ -69,5 +69,9 @@ class EmptyDataMatrix(ValueError):
     """Exception raised when an empty data matrix is created or a transformation results in an empty matrix."""
 
 
+class MatrixQueryError(ValueError):
+    """Exception raised when an invalid sample query is created."""
+
+
 class SampleMetadataNotFound(ValueError):
     """Exception raises when a sample does not contain required metadata."""

@@ -186,6 +186,41 @@ class TestDataMatrix:
             assert row.sample == sample
             assert numpy.array_equal(row.data, data_row)
 
+    def test_get_data(self, matrix: DataMatrix):
+        data = matrix.get_data()
+        expected_shape = (matrix.get_n_samples(), matrix.get_n_features())
+        assert data.shape == expected_shape
+
+    def test_get_data_sample_subset(self, matrix: DataMatrix):
+        all_samples = matrix.list_samples()
+        sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
+        data = matrix.get_data(sample_ids=sample_ids)
+        expected_shape = (len(sample_ids), matrix.get_n_features())
+        assert data.shape == expected_shape
+
+        for data_row, row_vector in zip(data, matrix.get_rows(*sample_ids)):
+            assert numpy.array_equal(data_row, row_vector.data)
+
+    def test_get_data_missing_sample_id_raises_error(self, matrix: DataMatrix):
+        sample_ids = ["invalid_sample_id"]
+        with pytest.raises(exceptions.SampleNotFound):
+            matrix.get_data(sample_ids=sample_ids)
+
+    def test_get_data_feature_subset(self, matrix: DataMatrix):
+        all_features = matrix.list_features()
+        feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
+        data = matrix.get_data(feature_groups=feature_groups)
+        expected_shape = (matrix.get_n_samples(), len(feature_groups))
+        assert data.shape == expected_shape
+
+        for data_column, column_vector in zip(data.T, matrix.get_columns(*feature_groups)):
+            assert numpy.array_equal(data_column, column_vector.data)
+
+    def test_get_data_missing_feature_groups_raises_error(self, matrix: DataMatrix):
+        feature_groups = [12314]
+        with pytest.raises(exceptions.FeatureGroupNotFound):
+            matrix.get_data(feature_groups=feature_groups)
+
     def test_set_data(self, matrix: DataMatrix):
         n_samples = matrix.get_n_samples()
         n_features = matrix.get_n_features()
@@ -393,82 +428,269 @@ class TestDataMatrix:
         remaining_samples = [x for x in samples if x.id not in rm_ids]
         assert remaining_samples == matrix.list_samples()
 
-    def test_split_matrix_no_groups_yield_same_matrix(self, matrix: DataMatrix):
-        groups = [x for x in matrix.split()]
-        assert len(groups) == 1
-        group_value, sub_matrix = groups[0]
-
-        assert not group_value
-        assert numpy.array_equal(sub_matrix.get_data(), matrix.get_data())
-        assert sub_matrix.list_samples() == matrix.list_samples()
-        assert sub_matrix.list_features() == matrix.list_features()
-
-    def test_split_combine_no_groups_yield_same_matrix(self, matrix: DataMatrix):
-        combined = DataMatrix.combine(*(x[1] for x in matrix.split()))
+    def test_combine_single_matrix_return_same_matrix(self, matrix: DataMatrix):
+        combined = DataMatrix.combine(matrix)
         assert numpy.array_equal(combined.get_data(), matrix.get_data())
         assert combined.list_samples() == matrix.list_samples()
         assert combined.list_features() == matrix.list_features()
-
-    def test_split_combine_groupby_sample_group(self, matrix: DataMatrix):
-        for sample in matrix.list_samples():
-            if sample.meta.order % 2:
-                sample.meta.group = "even"
-            else:
-                sample.meta.group = "odd"
-
-        submatrices = list()
-        for group, mat in matrix.split("group"):
-            assert len(group) == 1
-            assert group[0] in ["odd", "even"]
-            assert all(x.meta.group == group[0] for x in mat.list_samples())
-            submatrices.append(mat)
-
-        combined = DataMatrix.combine(*submatrices)
-        assert numpy.array_equal(combined.get_data(), matrix.get_data())
-        assert combined.list_samples() == matrix.list_samples()
-        assert combined.list_features() == matrix.list_features()
-
-    def test_split_combine_groupby_sample_group_and_meta_field(self, matrix: DataMatrix):
-        meta_field = "batch"
-        for sample in matrix.list_samples():
-            if sample.meta.order % 2:
-                sample.meta.group = "even"
-            else:
-                sample.meta.group = "odd"
-
-            if sample.meta.order % 3 == 1:
-                sample.meta.batch = 1
-            else:
-                sample.meta.batch = 2
-
-        submatrices = list()
-        for group_val, mat in matrix.split("group", meta_field):
-            sample_group, sample_batch = group_val
-            assert sample_group in ["odd", "even"]
-            assert sample_batch in [1, 2]
-            assert all(x.meta.group == sample_group for x in mat.list_samples())
-            assert all(x.meta.batch == sample_batch for x in mat.list_samples())
-            submatrices.append(mat)
-
-        combined = DataMatrix.combine(*submatrices)
-        assert numpy.array_equal(combined.get_data(), matrix.get_data())
-        assert combined.list_samples() == matrix.list_samples()
-        assert combined.list_features() == matrix.list_features()
-
-    def test_split_missing_meta_field_raises_error(self, matrix: DataMatrix):
-        meta_field = "missing_field"
-        for sample in matrix.list_samples():
-            if sample.meta.order % 2:
-                sample.meta.group = "even"
-            else:
-                sample.meta.group = "odd"
-
-            if sample.meta.order % 3 == 1:
-                sample.meta.missing_field = 1  # type: ignore
-
-        with pytest.raises(exceptions.SampleMetadataNotFound):
-            [x for x in matrix.split("group", meta_field)]
 
     def test_combine_no_matrices_raises_error(self):
         with pytest.raises(ValueError):
             DataMatrix.combine()
+
+    def test_combine_multiple_matrices(self, matrix: DataMatrix):
+        all_samples = matrix.list_samples()
+        sample_ids1 = [x.id for x in all_samples[:3]]
+        sample_ids2 = [x.id for x in all_samples[3:8]]
+        sample_ids3 = [x.id for x in all_samples[8:]]
+        sub1 = matrix.create_submatrix(sample_ids=sample_ids1)
+        sub2 = matrix.create_submatrix(sample_ids=sample_ids2)
+        sub3 = matrix.create_submatrix(sample_ids=sample_ids3)
+
+        combined = DataMatrix.combine(sub1, sub2, sub3)
+
+        assert numpy.array_equal(combined.get_data(), matrix.get_data())
+        assert combined.list_samples() == matrix.list_samples()
+        assert combined.list_features() == matrix.list_features()
+
+    def test_create_submatrix_no_sample_ids_no_feature_groups_return_equal_matrix(self, matrix: DataMatrix):
+        actual = matrix.create_submatrix()
+
+        assert actual.list_features() == matrix.list_features()
+        assert actual.list_samples() == matrix.list_samples()
+        assert numpy.array_equal(actual.get_data(), matrix.get_data())
+
+    def test_create_submatrix_with_sample_ids(self, matrix: DataMatrix):
+        all_samples = matrix.list_samples()
+        sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
+        actual = matrix.create_submatrix(sample_ids=sample_ids)
+
+        sub_matrix_samples = actual.list_samples()
+        assert len(sub_matrix_samples) == len(sample_ids)
+        assert all(actual.has_sample(x) for x in sample_ids)
+
+        assert actual.list_features() == matrix.list_features()
+        assert numpy.array_equal(actual.get_data(), matrix.get_data(sample_ids=sample_ids))
+
+    def test_create_submatrix_with_feature_groups(self, matrix: DataMatrix):
+        all_features = matrix.list_features()
+        feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
+        actual = matrix.create_submatrix(feature_groups=feature_groups)
+
+        sub_matrix_feature_groups = actual.list_features()
+        assert len(sub_matrix_feature_groups) == len(feature_groups)
+        assert all(actual.has_feature(x) for x in feature_groups)
+
+        assert actual.list_samples() == matrix.list_samples()
+        assert numpy.array_equal(actual.get_data(), matrix.get_data(feature_groups=feature_groups))
+
+    def test_create_submatrix_with_feature_groups_and_sample_ids(self, matrix: DataMatrix):
+        all_features = matrix.list_features()
+        feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
+        all_samples = matrix.list_samples()
+        sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
+        actual = matrix.create_submatrix(sample_ids=sample_ids, feature_groups=feature_groups)
+
+        sub_matrix_samples = actual.list_samples()
+        assert len(sub_matrix_samples) == len(sample_ids)
+        assert all(actual.has_sample(x) for x in sample_ids)
+
+        sub_matrix_feature_groups = actual.list_features()
+        assert len(sub_matrix_feature_groups) == len(feature_groups)
+        assert all(actual.has_feature(x) for x in feature_groups)
+
+        expected_data = matrix.get_data(feature_groups=feature_groups, sample_ids=sample_ids)
+
+        assert numpy.array_equal(actual.get_data(), expected_data)
+
+    def test_create_submatrix_with_missing_sample_ids_raise_error(self, matrix: DataMatrix):
+        all_samples = matrix.list_samples()
+        sample_ids = [all_samples[1].id, all_samples[5].id, "invalid_sample_id"]
+        with pytest.raises(exceptions.SampleNotFound):
+            matrix.create_submatrix(sample_ids=sample_ids)
+
+    def test_create_submatrix_with_missing_feature_group_raise_error(self, matrix: DataMatrix):
+        all_features = matrix.list_features()
+        invalid_group = 1203
+        feature_groups = [all_features[1].group, all_features[5].group, invalid_group]
+        with pytest.raises(exceptions.FeatureGroupNotFound):
+            matrix.create_submatrix(feature_groups=feature_groups)
+
+
+class TestDataMatrixQuery:
+    n_samples = 10
+    n_features = 20
+
+    @pytest.fixture
+    def samples(self, tmp_path: pathlib.Path):
+        res = list()
+        for k in range(self.n_samples):
+            group = "odd" if k % 2 else "even"
+            batch = k // 10
+            s = create_sample(tmp_path, k, order=k, group=group, batch=batch)
+            res.append(s)
+        return res
+
+    @pytest.fixture
+    def features(self):
+        return [create_feature_group(k) for k in range(self.n_features)]
+
+    @pytest.fixture
+    def matrix(self, samples, features):
+        data = numpy.random.normal(loc=100.0, size=(self.n_samples, self.n_features))
+        return DataMatrix(samples, features, data)
+
+    def test_fetch_samples_id_no_filter_return_all_samples(self, matrix: DataMatrix):
+        _, sample_ids = matrix.query.fetch_sample_ids()[0]
+        assert all(matrix.has_sample(x) for x in sample_ids)
+
+    def test_fetch_samples_invalid_filter_field_raises_error(self, matrix: DataMatrix):
+        with pytest.raises(exceptions.SampleMetadataNotFound):
+            matrix.query.filter(invalid_meta="invalid_value").fetch_sample_ids()
+
+    def test_fetch_samples_with_equality_filter(self, matrix: DataMatrix):
+        select_group = "odd"
+        _, sample_ids = matrix.query.filter(group=select_group).fetch_sample_ids()[0]
+        assert sample_ids
+        for id_ in sample_ids:
+            sample = matrix.get_sample(id_)
+            assert sample.meta.group == "odd"
+            assert sample.meta.batch == 0 or sample.meta.batch == 1
+        assert all(matrix.has_sample(x) for x in sample_ids)
+
+    def test_fetch_samples_with_in_filter(self, matrix: DataMatrix):
+        select_order = [3, 4, 5]
+        _, sample_ids = matrix.query.filter(order=select_order).fetch_sample_ids()[0]
+        assert len(sample_ids) == len(select_order)
+        for id_ in sample_ids:
+            sample = matrix.get_sample(id_)
+            assert sample.meta.order in select_order
+        assert all(matrix.has_sample(x) for x in sample_ids)
+
+    def test_fetch_samples_with_multiple_filters(self, matrix: DataMatrix):
+        select_order = [3, 4, 5]
+        select_group = "odd"
+        _, sample_ids = matrix.query.filter(order=select_order, group=select_group).fetch_sample_ids()[0]
+        assert len(sample_ids) == 2
+        for id_ in sample_ids:
+            sample = matrix.get_sample(id_)
+            assert sample.meta.order == 3 or sample.meta.order == 5
+            assert sample.meta.group == select_group
+
+    def test_fetch_samples_invalid_group_by_field_raises_error(self, matrix: DataMatrix):
+        with pytest.raises(exceptions.SampleMetadataNotFound):
+            matrix.query.group_by("invalid_meta").fetch_sample_ids()
+
+    def test_sample_with_group_by_no_groups_return_all_samples_in_an_empty_group(self, matrix: DataMatrix):
+        group, sample_ids = matrix.query.group_by().fetch_sample_ids()[0]
+        assert not group
+        assert len(sample_ids) == matrix.get_n_samples()
+        assert all(matrix.has_sample(x) for x in sample_ids)
+
+    def test_sample_with_group_by_single_field(self, matrix: DataMatrix):
+        actual = matrix.query.group_by("group").fetch_sample_ids()
+        expected_groups = ["odd", "even"]
+        for group, sample_ids in actual:
+            assert len(group) == 1
+            assert group[0] in expected_groups
+            for sample_id in sample_ids:
+                sample = matrix.get_sample(sample_id)
+                assert sample.meta.group == group[0]
+
+    def test_sample_with_group_by_multiple_fields(self, matrix: DataMatrix):
+        actual = matrix.query.group_by("group", "batch").fetch_sample_ids()
+        expected_groups = ["odd", "even"]
+        expected_batches = [0, 1]
+        for group, sample_ids in actual:
+            group_group, group_batch = group
+            assert len(group) == 2
+            assert group_group in expected_groups
+            assert group_batch in expected_batches
+            for sample_id in sample_ids:
+                sample = matrix.get_sample(sample_id)
+                assert sample.meta.group == group_group
+                assert sample.meta.batch == group_batch
+
+    def test_sample_with_filter_and_group_by(self, matrix: DataMatrix):
+        actual = matrix.query.filter(batch=1).group_by("group", "batch").fetch_sample_ids()
+        expected_groups = ["odd", "even"]
+        expected_batch = 1
+        for group, sample_ids in actual:
+            group_group, group_batch = group
+            assert len(group) == 2
+            assert group_group in expected_groups
+            assert group_batch == expected_batch
+            for sample_id in sample_ids:
+                sample = matrix.get_sample(sample_id)
+                assert sample.meta.group == group_group
+                assert sample.meta.batch == expected_batch
+
+
+class TestDataMatrixMetrics:
+    n_samples = 10
+    n_features = 20
+
+    @pytest.fixture
+    def samples(self, tmp_path: pathlib.Path):
+        res = list()
+        for k in range(self.n_samples):
+            group = "odd" if k % 2 else "even"
+            batch = k // 10
+            s = create_sample(tmp_path, k, order=k, group=group, batch=batch)
+            s.meta.type = "qc" if k < 5 else "sample"
+            res.append(s)
+        return res
+
+    @pytest.fixture
+    def features(self):
+        return [create_feature_group(k) for k in range(self.n_features)]
+
+    @pytest.fixture
+    def matrix(self, samples, features):
+        data = numpy.random.normal(loc=100.0, size=(self.n_samples, self.n_features))
+        return DataMatrix(samples, features, data)
+
+    def test_cv(self, matrix: DataMatrix):
+        cv = matrix.metrics.cv()
+        assert cv.size == matrix.get_n_features()
+
+    def test_detection_rate(self, matrix: DataMatrix):
+        dr = matrix.metrics.detection_rate()
+        assert dr.size == matrix.get_n_features()
+
+    def test_dratio(self, matrix: DataMatrix):
+        dratio = matrix.metrics.dratio()
+        assert dratio.size == matrix.get_n_features()
+
+    def test_dratio_with_groups(self, matrix: DataMatrix):
+        dratio = matrix.metrics.dratio(sample_groups=["odd"], qc_groups=["even"])
+        assert dratio.size == matrix.get_n_features()
+
+    def test_dratio_no_sample_group_raise_error(self, matrix: DataMatrix):
+        with pytest.raises(ValueError):
+            matrix.metrics.dratio(sample_groups=["invalid_group"])
+
+    def test_dratio_no_qc_group_raise_error(self, matrix: DataMatrix):
+        with pytest.raises(ValueError):
+            matrix.metrics.dratio(qc_groups=["invalid_group"])
+
+    def test_pca(self, matrix: DataMatrix):
+        scores, loadings, variance = matrix.metrics.pca()
+        assert scores.shape[0] == matrix.get_n_samples()
+        assert loadings is None
+        assert variance is None
+
+    def test_pca_matrix_with_missing_values_raise_error(self, samples: list[Sample], features: list[FeatureGroup]):
+        data = numpy.random.normal(size=(len(samples), len(features)))
+        data[0, 2] = numpy.nan
+        matrix = DataMatrix(samples, features, data)
+        with pytest.raises(ValueError):
+            matrix.metrics.pca()
+
+    def test_correlation(self, matrix: DataMatrix):
+        corr = matrix.metrics.correlation("order")
+        assert corr.size == matrix.get_n_features()
+
+    def test_correlation_non_numeric_field_raises_error(self, matrix: DataMatrix):
+        with pytest.raises(ValueError):
+            matrix.metrics.correlation("group")

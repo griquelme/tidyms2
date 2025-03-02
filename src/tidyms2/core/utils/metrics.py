@@ -1,6 +1,6 @@
 """Core metrics used by the data matrix."""
 
-from typing import Literal, assert_never, cast, overload
+from typing import assert_never, cast
 
 import numpy
 from scipy.stats import median_abs_deviation, pearsonr, rankdata
@@ -127,123 +127,15 @@ def correlation(
             assert_never(never)
 
 
-@overload
 def pca(
-    X: FloatArray,
+    X,
     *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[False] = ...,
-    return_variance: Literal[False] = ...,
-) -> FloatArray: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[True] = ...,
-    return_variance: Literal[False] = ...,
-) -> tuple[FloatArray, FloatArray]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: bool = ...,
-    return_variance: Literal[False] = ...,
-) -> FloatArray | tuple[FloatArray, FloatArray]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[False] = ...,
-    return_variance: Literal[True] = ...,
-) -> tuple[FloatArray, FloatArray]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[True] = ...,
-    return_variance: Literal[True] = ...,
-) -> tuple[FloatArray, FloatArray, FloatArray1D]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: bool = ...,
-    return_variance: Literal[True] = ...,
-) -> tuple[FloatArray, FloatArray] | tuple[FloatArray, FloatArray, FloatArray1D]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[False],
-    return_variance: bool = ...,
-) -> FloatArray | tuple[FloatArray, FloatArray1D]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: Literal[True] = ...,
-    return_variance: bool = ...,
-) -> tuple[FloatArray, FloatArray] | tuple[FloatArray, FloatArray, FloatArray1D]: ...
-
-
-@overload
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = ...,
-    normalization: NormalizationMethod | str | None = ...,
-    scaling: ScalingMethod | str | None = ...,
-    return_loadings: bool = ...,
-    return_variance: bool = ...,
-) -> FloatArray | tuple[FloatArray, FloatArray1D] | tuple[FloatArray, FloatArray, FloatArray1D]: ...
-
-
-def pca(
-    X: FloatArray,
-    *,
-    n_components: int = 2,
-    normalization: NormalizationMethod | str | None = None,
-    scaling: ScalingMethod | str | None = None,
-    return_loadings: bool = False,
-    return_variance: bool = False,
-):
+    n_components=2,
+    normalization=None,
+    scaling=None,
+    return_loadings=False,
+    return_variance=False,
+) -> tuple[FloatArray, FloatArray | None, FloatArray1D | None]:
     """Compute PCA on data.
 
     PCA requires that no NaN values
@@ -281,17 +173,15 @@ def pca(
 
     if return_loadings:
         loadings = pca.components_.T * numpy.sqrt(pca.explained_variance_)
+    else:
+        loadings = None
 
     if return_variance:
         variance = pca.explained_variance_
+    else:
+        variance = None
 
-    if return_variance and return_loadings:
-        return scores, loadings, variance
-    elif return_variance:
-        return scores, variance
-    elif return_loadings:
-        return scores, loadings
-    return scores
+    return scores, loadings, variance
 
 
 def _sample_std(X: FloatArray, robust: bool = False) -> FloatArray1D:
