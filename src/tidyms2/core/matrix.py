@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import Generator, Self, Sequence
+from pathlib import Path
+from typing import Self, Sequence
 
 import numpy
 import pydantic
 
 from . import exceptions
 from .dataflow import DataMatrixProcessStatus
-from .enums import SampleType
+from .enums import CorrelationMethod, NormalizationMethod, SampleType, ScalingMethod
 from .models import FeatureGroup, Sample
-from .utils.metrics import cv, detection_rate, dratio
+from .utils import metrics
 from .utils.numpy import FloatArray, FloatArray1D
 
 
@@ -24,7 +25,7 @@ class DataMatrix:
     :param data: A 2D numpy float array with matrix data. The number of rows and columns must match the
         `samples`  and `features` length respectively.
     :param validate: If set to ``True`` will assume that the input data is sanitized. Otherwise, will validate
-        and normalize data before creating the data matrix. Set to ``False`` by default.
+        and normalize data before creating the data matrix. Set to ``True`` by default.
 
     """
 
@@ -34,7 +35,7 @@ class DataMatrix:
         def __init__(self, matrix: DataMatrix) -> None:
             self.matrix = matrix
 
-        def cv(self, *groupby: str, robust: bool = False) -> dict[Sequence[str], FloatArray1D]:
+        def cv(self, robust: bool = False) -> FloatArray1D:
             r"""Compute features coefficient of variation (CV).
 
             .. math::
@@ -43,7 +44,6 @@ class DataMatrix:
 
             where :math:`S` is the sample standard deviation and :math:`\bar{X}` is the sample mean
 
-            :param groupby: a list of sample metadata fields to compute the CV by group.
             :param robust: If set to ``True`` will use the sample median absolute deviation and
                 median instead of the standard deviation and mean.
             :return: a dictionary where the keys are group values for each matrix partition and
@@ -54,21 +54,14 @@ class DataMatrix:
             :raises ValueError: if a sample does not contain a metadata field defined in `groupby`.
 
             """
-            result = dict()
-            for group, sub in self.matrix.split(*groupby):
-                result[group] = cv(sub.get_data(), robust=robust)
-            return result
+            return metrics.cv(self.matrix.get_data(), robust=robust)
 
         def detection_rate(
             self,
-            *groupby: str,
             threshold: float | FloatArray1D = 0.0,
-        ) -> dict[Sequence[str], FloatArray1D]:
+        ) -> FloatArray1D:
             """Compute the detection rate of features (DR)."""
-            result = dict()
-            for group, sub in self.matrix.split(*groupby):
-                result[group] = detection_rate(sub.get_data(), threshold=threshold)
-            return result
+            return metrics.detection_rate(self.matrix.get_data(), threshold=threshold)
 
         def dratio(
             self,
@@ -94,33 +87,226 @@ class DataMatrix:
             :param sample_groups: a list of sample groups with biological variation. If not provided, uses
                 all samples with :term:`sample type` :py:class:`SampleType.SAMPLE`.
             :param qc_groups: a list of sample groups with instrumental variation only. If not provided, uses
-                all samples with :term:`sample type` :py:class:`SAMPLETYPE.TECHNICAL_QC`.
+                all samples with :term:`sample type` :py:class:`SampleType.TECHNICAL_QC`.
             :param robust: if set to ``True`` estimate the D-ratio using the median absolute deviation instead.
             :return: an 1D array with the D-ratio of each column. Columns with constant sample values will
-                result in ``Inf``. If both sample and QC columns are contant, the result will be ``NaN``.
+                result in ``Inf``. If both sample and QC columns are constant, the result will be ``NaN``.
                 If `robust` is set to ``True`` and there are less than two non ``NaN`` values in either `Xqc`
                 or `Xs` columns, NaN values will also be obtained.
             """
-            all_samples = self.matrix.list_samples()
             if sample_groups is None:
-                sample_ids = [x.id for x in all_samples if x.meta.type is SampleType.SAMPLE]
+                sample_query = self.matrix.query.filter(type=SampleType.SAMPLE)
             else:
-                sample_ids = [x.id for x in all_samples if x.meta.group in sample_groups]
+                sample_query = self.matrix.query.filter(group=sample_groups)
+
+            sample_query_results = sample_query.fetch_sample_ids()
+            if not sample_query_results:
+                raise ValueError("No samples found in sample group.")
+            sample_ids = sample_query_results[0][1]
 
             if qc_groups is None:
-                qc_sample_ids = [x.id for x in all_samples if x.meta.type is SampleType.TECHNICAL_QC]
+                qc_query = self.matrix.query.filter(type=SampleType.TECHNICAL_QC)
             else:
-                qc_sample_ids = [x.id for x in all_samples if x.meta.group in qc_groups]
+                qc_query = self.matrix.query.filter(group=qc_groups)
 
-            Xs = self.matrix.filter_rows(*sample_ids).get_data()
-            Xqc = self.matrix.filter_rows(*qc_sample_ids).get_data()
-            return dratio(Xs, Xqc, robust=robust)
+            qc_sample_query_results = qc_query.fetch_sample_ids()
+            if not qc_sample_query_results:
+                raise ValueError("No samples found in qc group.")
+            qc_sample_ids = qc_sample_query_results[0][1]
 
-        def pca(self):
-            """Compute the PCA scores and loading."""
-            ...
+            Xs = self.matrix.get_data(sample_ids=sample_ids)
+            Xqc = self.matrix.get_data(sample_ids=qc_sample_ids)
+            return metrics.dratio(Xs, Xqc, robust=robust)
 
-        def correlation(self, field): ...
+        def pca(
+            self,
+            *,
+            n_components: int = 2,
+            normalization: NormalizationMethod | str | None = None,
+            scaling: ScalingMethod | str | None = None,
+            return_loadings: bool = False,
+            return_variance: bool = False,
+        ):
+            """Compute the PCA scores and loading of the data matrix.
+
+            :param n_components: the number of Principal Components to compute.
+            :param scaling: the scaling method applied to `X` columns. Refer to
+                :py:class:`~tidyms2.core.enums.ScalingMethod` for the list of available scaling methods. If set to
+                ``None``, no scaling is applied.
+            :param normalization: One of the available normalization methods. Refer to
+                :py:class:`~tidyms2.core.enums.NormalizationMethod` for the list of available normalization methods.
+                If set to ``None``, do not perform row normalization.
+            :param return_loadings: wether to return the PCA feature loadings.
+            :param return_variance: wether to return the PC variance.
+            :param kwargs: params passed to :py:func:`~tidyms2.core.matrix.DataMatrix.select_samples` method to
+                perform a PCA analysis with a subset of samples.
+            :return: A 2D array with PCA scores. If `return_loadings` is set to ``True`` also include a 2D array with
+                the PCA loadings. If `return_pc_variance` is set to ``True`` also include a 1D array with PC variances.
+
+
+            """
+            if not self.matrix.get_process_status().missing_imputed:
+                raise ValueError("PCA cannot be computed on matrices with NaN values.")
+
+            return metrics.pca(
+                self.matrix.get_data(),
+                n_components=n_components,
+                normalization=normalization,
+                scaling=scaling,
+                return_loadings=return_loadings,
+                return_variance=return_variance,
+            )
+
+        def correlation(
+            self,
+            field: str,
+            method: CorrelationMethod | str = CorrelationMethod.PEARSON,
+        ) -> FloatArray1D:
+            """Compute the correlation coefficient between features and a sample metadata field."""
+            X = self.matrix.get_data()
+            y = numpy.array(self.matrix.list_sample_field(field))
+            if y.dtype.kind not in ["i", "u", "f"]:
+                raise ValueError("Sample metadata field must contain numeric data.")
+            return metrics.correlation(X, y, method)
+
+    class Query:
+        """Query API for selecting sample subsets using sample metadata.
+
+        Note that the `filter` and `group_by` methods are implemented using using pure Python.
+        If performance is required, consider using the
+        :py:func:`~tidyms2.core.matrix.DataMatrix.Metrics.sql` method, which allows to query
+        sample metadata and feature using a DuckDB SQL backend.
+
+        """
+
+        def __init__(self, matrix: DataMatrix):
+            self.matrix = matrix
+            self._filter_by = None
+            self._group_by = None
+
+        def _reset(self):
+            self._filter_by = None
+            self._group_by = None
+
+        def filter(self, **kwargs) -> Self:
+            """Select samples based on metadata fields.
+
+            :param kwargs: key-value pairs used to select samples. Keys must be a
+                :py:class:`~tidyms2.core.models.SampleMetadata` field. If a scalar value is passed,
+                it is compared for equality with each sample metadata. If an list or tuple is passed,
+                then the metadata field is checked for membership in the iterable. If multiple
+                key-value pairs are provided, samples must pass checks for all pairs.
+
+            """
+            self._filter_by = kwargs
+            return self
+
+        def group_by(self, *args: str) -> Self:
+            """Group samples based on metadata fields.
+
+            :param args: the list of :py:class:`~tidyms2.core.models.SampleMetadata` fields used to
+                create groups.
+
+            """
+            self._group_by = args
+            return self
+
+        def fetch_sample_ids(self) -> list[tuple[Sequence[str], list[str]]]:
+            """Execute a sample query."""
+            filter_by = self._filter_by or dict()
+            filtered = self._filter_samples(self.matrix.list_samples(), **filter_by)
+
+            group_by = self._group_by or tuple()
+            grouped = self._group_by_samples(filtered, *group_by)
+            self._reset()
+            return [(group, [x.id for x in group_samples]) for group, group_samples in grouped.items()]
+
+        def sql(self, stmt: str):
+            """Query data matrix metadata using SQL syntax.
+
+            :param stmt: the SQL statement to query data.
+
+            """
+            # TODO: use DuckDB + python
+            raise NotImplementedError
+
+        @staticmethod
+        def _filter_samples(samples: list[Sample], **kwargs) -> list[Sample]:
+            """Select a subset of samples using metadata."""
+            filtered = list()
+            for sample in samples:
+                include = True
+                for field, filter_value in kwargs.items():
+                    if not hasattr(sample.meta, field):
+                        msg = f"Sample id: {sample.id}. Field: {field}"
+                        raise exceptions.SampleMetadataNotFound(msg)
+
+                    value = getattr(sample.meta, field, None)
+
+                    if include and isinstance(filter_value, (list, tuple)):
+                        include = value in filter_value
+                    elif include:
+                        include = value == filter_value
+
+                    if not include:
+                        break
+
+                if include:
+                    filtered.append(sample)
+            return filtered
+
+        @staticmethod
+        def _group_by_samples(samples: list[Sample], *args) -> dict[Sequence[str], list[Sample]]:
+            """Select a subset of samples using metadata."""
+            group_to_ids = dict()
+            for sample in samples:
+                group = list()
+                for meta_field in args:
+                    if not hasattr(sample.meta, meta_field):
+                        msg = f"Sample id: {sample.id}. Field: {meta_field}"
+                        raise exceptions.SampleMetadataNotFound(msg)
+                    meta_value = getattr(sample.meta, meta_field)
+
+                    group.append(meta_value)
+                group = tuple(group)
+                group_ids = group_to_ids.setdefault(group, list())
+                group_ids.append(sample)
+            return group_to_ids
+
+    class IO:
+        """Manage export and import of a data matrix in a variety of formats."""
+
+        def __init__(self, matrix: DataMatrix):
+            self.matrix = matrix
+
+        def features_to_dict(self) -> dict:
+            """Export feature metadata into a dataframe-friendly dictionary format."""
+            raise NotImplementedError
+
+        def features_to_csv(self, path: Path) -> None:
+            """Write feature metadata into a csv file."""
+            raise NotImplementedError
+
+        def matrix_to_dict(self) -> dict:
+            """Export data matrix into a dataframe-friendly dictionary format."""
+            raise NotImplementedError
+
+        def matrix_to_csv(self, path: Path) -> None:
+            """Write data matrix into a csv file."""
+            raise NotImplementedError
+
+        def samples_to_dict(self) -> dict:
+            """Export sample metadata into a dataframe-friendly dictionary format."""
+            raise NotImplementedError
+
+        def samples_to_csv(self, path: Path) -> None:
+            """Write sample metadata into a csv file."""
+            raise NotImplementedError
+
+        @classmethod
+        def from_csv(cls, samples_csv: Path, matrix_csv: Path, features_csv: Path) -> DataMatrix:
+            """Create a data matrix instance from csv data."""
+            raise NotImplementedError
 
     def __init__(
         self,
@@ -134,8 +320,11 @@ class DataMatrix:
         self._features = [x for x in features]
         self._status = DataMatrixProcessStatus()
         self.metrics = self.Metrics(self)
+        self.query = self.Query(self)
+        self.io = self.IO(self)
         if validate:
             self.validate()
+            self.check_status()
 
     def get_n_features(self) -> int:
         """Retrieve the number of feature groups in the data matrix."""
@@ -153,6 +342,16 @@ class DataMatrix:
         """List all samples in the data matrix."""
         return self._samples.copy()
 
+    def list_sample_field(self, field: str) -> list:
+        """Retrieve the field value from all samples.
+
+        If a sample does not contain the queried field, it returns ``None``.
+
+        :param field: the field name to fetch
+
+        """
+        return [getattr(x.meta, field, None) for x in self._samples]
+
     def list_features(self) -> list[FeatureGroup]:
         """List all features in the data matrix."""
         return self._features.copy()
@@ -164,6 +363,10 @@ class DataMatrix:
 
         """
         ...
+
+    def check_status(self) -> None:
+        """Check and update the data matrix status."""
+        self._status.missing_imputed = numpy.all(~numpy.isnan(self.get_data())).item()
 
     def get_columns(self, *groups: int) -> list[FeatureVector]:
         """Retrieve columns from the data matrix.
@@ -180,7 +383,7 @@ class DataMatrix:
             if g not in self._feature_index():
                 raise exceptions.FeatureGroupNotFound(g)
             index = self._feature_index()[g]
-            row = FeatureVector(data=self._data[:, index], feature=self._features[index])
+            row = FeatureVector(data=self._data[:, index], feature=self._features[index], index=index)
             columns.append(row)
         return columns
 
@@ -198,17 +401,37 @@ class DataMatrix:
             if s not in self._sample_index():
                 raise exceptions.SampleNotFound(s)
             index = self._sample_index()[s]
-            row = SampleVector(data=self._data[index], sample=self._samples[index])
+            row = SampleVector(data=self._data[index], sample=self._samples[index], index=index)
             rows.append(row)
         return rows
 
-    def get_data(self) -> FloatArray:
+    def get_data(
+        self,
+        sample_ids: list[str] | None = None,
+        feature_groups: list[int] | None = None,
+    ) -> FloatArray:
         """Retrieve the matrix data in numpy format.
 
         Each rows in the array is associated with a sample and each column is associated with a feature.
 
+        :param sample_ids: if provided, return a copy of the data array using the subset of samples provided.
+        :param feature_groups: if provided, return a copy of the data array using the subset of feature provided.
+
         """
-        return self._data
+        if sample_ids is None and feature_groups is None:
+            return self._data
+        elif sample_ids is None and feature_groups is not None:
+            feature_idx = self.get_feature_index(*feature_groups)
+            return self._data[:, feature_idx].copy()
+        elif sample_ids is not None and feature_groups is None:
+            sample_idx = self.get_sample_index(*sample_ids)
+            return self._data[sample_idx].copy()
+        else:
+            assert feature_groups is not None
+            assert sample_ids is not None
+            feature_idx = self.get_feature_index(*feature_groups)
+            sample_idx = self.get_sample_index(*sample_ids)
+            return self._data[sample_idx, feature_idx].copy()
 
     def get_feature_index(self, *groups: int) -> list[int]:
         """Retrieve the list of indices in the data associated with feature groups.
@@ -216,7 +439,10 @@ class DataMatrix:
         :param groups: the list of feature groups to search
 
         """
-        return [self._feature_index()[x] for x in groups]
+        try:
+            return [self._feature_index()[x] for x in groups]
+        except KeyError as e:
+            raise exceptions.FeatureGroupNotFound from e
 
     def get_sample_index(self, *sample_ids: str) -> list[int]:
         """Retrieve the list of indices in the data associated with samples.
@@ -224,7 +450,34 @@ class DataMatrix:
         :param sample_ids: the list of samples to search
 
         """
-        return [self._sample_index()[x] for x in sample_ids]
+        try:
+            return [self._sample_index()[x] for x in sample_ids]
+        except KeyError as e:
+            raise exceptions.SampleNotFound from e
+
+    def get_feature(self, group: int) -> FeatureGroup:
+        """Retrieve a group from the data matrix.
+
+        :param group: the group label of the feature to retrieve
+        :raise FeatureGroupNotFound: if the feature is not found in the data matrix.
+
+        """
+        if not self.has_feature(group):
+            raise exceptions.FeatureGroupNotFound(group)
+        idx = self._feature_index()[group]
+        return self._features[idx]
+
+    def get_sample(self, sample_id: str) -> Sample:
+        """Retrieve a sample from the data matrix.
+
+        :param sample_id: the id of the sample to retrieve
+        :raises SampleNotFound: if no sample with the provided id exists in the matrix
+
+        """
+        if not self.has_sample(sample_id):
+            raise exceptions.SampleNotFound(sample_id)
+        idx = self._sample_index()[sample_id]
+        return self._samples[idx]
 
     def has_feature(self, group: int) -> bool:
         """Check if a feature group is stored in the matrix.
@@ -290,15 +543,6 @@ class DataMatrix:
         for sample_id, row in pairs:
             ind = self._sample_index()[sample_id]
             self._data[ind] = row
-
-    def query(self, stmt: str):
-        """Query data matrix using SQL syntax.
-
-        :param stmt: the SQL statement to query data.
-
-        """
-        # TODO: use polars.LazyFrame + SQL API
-        ...
 
     def remove_features(self, *groups: int) -> None:
         """Remove feature groups based on their groups labels.
@@ -367,57 +611,34 @@ class DataMatrix:
             samples.extend(m.list_samples())
         data = numpy.vstack([m.get_data() for m in matrices])
         features = matrices[0].list_features()
-        return cls(samples, features, data)
+        return cls(samples, features, data, validate=True)
 
-    def filter_columns(self, *groups: int) -> Self:
-        """Create a submatrix using a subset of rows.
+    def create_submatrix(
+        self,
+        sample_ids: list[str] | None = None,
+        feature_groups: list[int] | None = None,
+    ) -> Self:
+        """Create a submatrix using a subset of samples and/or features."""
+        if sample_ids is None and feature_groups is None:
+            submatrix_samples = self.list_samples()
+            submatrix_features = self.list_features()
+            data = self.get_data()
+        elif sample_ids is None and feature_groups is not None:
+            submatrix_samples = self.list_samples()
+            submatrix_features = [self.get_feature(x) for x in feature_groups]
+            data = self.get_data(feature_groups=feature_groups)
+        elif sample_ids is not None and feature_groups is None:
+            submatrix_samples = [self.get_sample(x) for x in sample_ids]
+            submatrix_features = self.list_features()
+            data = self.get_data(sample_ids=sample_ids)
+        else:
+            assert feature_groups is not None
+            assert sample_ids is not None
+            submatrix_samples = [self.get_sample(x) for x in sample_ids]
+            submatrix_features = [self.get_feature(x) for x in feature_groups]
+            data = self.get_data(feature_groups=feature_groups, sample_ids=sample_ids)
 
-        :param groups: the list of feature groups to include in the sub-matrix
-
-        """
-        idx = self.get_feature_index(*groups)
-        data = self._data[:, idx].copy()
-        features = [self._features[x] for x in idx]
-        return self.__class__(self._samples, features, data, validate=False)
-
-    def filter_rows(self, *ids: str) -> Self:
-        """Create a submatrix using a subset of rows.
-
-        :param ids: the list of sample ids to include in the sub-matrix
-
-        """
-        idx = self.get_sample_index(*ids)
-        data = self._data[idx].copy()
-        samples = [self._samples[i] for i in idx]
-        return self.__class__(samples, self._features, data, validate=False)
-
-    def split(self, *by: str) -> Generator[tuple[tuple, Self], None, None]:
-        """Split data matrix into submatrices using sample metadata.
-
-        :param by: the sample metadata fields to
-
-        """
-        for group, group_ids in self._create_sample_split_group_to_id(by).items():
-            yield group, self.filter_rows(*group_ids)
-
-    def _create_sample_split_group_to_id(self, groups: Sequence[str]) -> dict[tuple, list[str]]:
-        group_to_ids = dict()
-        for sample in self._samples:
-            group_key = self._sample_to_group_key(sample, groups)
-            group_ids = group_to_ids.setdefault(group_key, list())
-            group_ids.append(sample.id)
-        return group_to_ids
-
-    @staticmethod
-    def _sample_to_group_key(sample: Sample, groups: Sequence[str]) -> tuple:
-        key = list()
-        for g in groups:
-            try:
-                g_value = getattr(sample.meta, g)
-            except AttributeError:
-                raise exceptions.SampleMetadataNotFound(f"{sample.id}.meta.{g}")
-            key.append(g_value)
-        return tuple(key)
+        return self.__class__(submatrix_samples, submatrix_features, data, validate=False)
 
     @cache
     def _sample_index(self) -> dict[str, int]:
@@ -499,6 +720,9 @@ class BaseVector(pydantic.BaseModel):
 
     data: FloatArray1D = pydantic.Field(repr=False)
     """The vector data."""
+
+    index: int
+    """The data matrix index associated with the vector."""
 
 
 class FeatureVector(BaseVector):

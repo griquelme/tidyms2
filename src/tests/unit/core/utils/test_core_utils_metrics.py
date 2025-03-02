@@ -1,9 +1,12 @@
+from typing import cast
+
 import numpy as np
 import pytest
 from scipy.stats import ConstantInputWarning, median_abs_deviation
 
 from tidyms2.core.enums import CorrelationMethod
 from tidyms2.core.utils import metrics
+from tidyms2.core.utils.numpy import FloatArray
 
 
 class TestCV:
@@ -418,18 +421,22 @@ class TestPCA:
         n_rows = 20
         n_cols = 10
         n_components = 2
-        X = np.random.normal(size=(n_rows, n_cols))
-        scores = metrics.pca(X, n_components=n_components)
+        X = cast(FloatArray, np.random.normal(size=(n_rows, n_cols)))
+        scores, loadings, variance = metrics.pca(X)
         assert scores.shape == (n_rows, n_components)
+        assert loadings is None
+        assert variance is None
 
     def test_return_loadings(self):
         n_rows = 20
         n_cols = 10
         n_components = 2
         X = np.random.normal(size=(n_rows, n_cols))
-        scores, loadings = metrics.pca(X, n_components=n_components, return_loadings=True)
+        scores, loadings, variance = metrics.pca(X, n_components=n_components, return_loadings=True)
         assert scores.shape == (n_rows, n_components)
+        assert loadings is not None
         assert loadings.shape == (n_cols, n_components)
+        assert variance is None
 
     def test_return_variance(self):
         n_rows = 20
@@ -437,9 +444,11 @@ class TestPCA:
         n_components = 2
 
         X = np.random.normal(size=(n_rows, n_cols))
-        scores, variance = metrics.pca(X, n_components=n_components, return_variance=True)
+        scores, loadings, variance = metrics.pca(X, n_components=n_components, return_variance=True)
 
         assert scores.shape == (n_rows, n_components)
+        assert loadings is None
+        assert variance is not None
         assert variance.shape == (n_components,)
 
     def test_return_variance_and_return_loadings(self):
@@ -455,7 +464,9 @@ class TestPCA:
             return_variance=True,
         )
         assert scores.shape == (n_rows, n_components)
+        assert loadings is not None
         assert loadings.shape == (n_cols, n_components)
+        assert variance is not None
         assert variance.shape == (n_components,)
 
     def test_with_scaling(self):
@@ -472,7 +483,9 @@ class TestPCA:
             return_variance=True,
         )
         assert scores.shape == (n_rows, n_components)
+        assert loadings is not None
         assert loadings.shape == (n_cols, n_components)
+        assert variance is not None
         assert variance.shape == (n_components,)
         assert ~np.any(np.isnan(scores))
 
@@ -490,7 +503,9 @@ class TestPCA:
             return_variance=True,
         )
         assert scores.shape == (n_rows, n_components)
+        assert loadings is not None
         assert loadings.shape == (n_cols, n_components)
+        assert variance is not None
         assert variance.shape == (n_components,)
         assert ~np.any(np.isnan(scores))
 
@@ -509,7 +524,9 @@ class TestPCA:
             return_variance=True,
         )
         assert scores.shape == (n_rows, n_components)
+        assert loadings is not None
         assert loadings.shape == (n_cols, n_components)
+        assert variance is not None
         assert variance.shape == (n_components,)
         assert ~np.any(np.isnan(scores))
 
