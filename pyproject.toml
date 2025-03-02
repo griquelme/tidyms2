@@ -57,6 +57,7 @@ exclude_also = [
     "if TYPE_CHECKING:",
     "^class\\s\\w*\\(Protocol",
     "@abstractmethod",
+    "case _ as never:",
 ]
 
 [tool.pytest.ini_options]
