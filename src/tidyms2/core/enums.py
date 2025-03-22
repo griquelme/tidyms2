@@ -112,6 +112,36 @@ class ScalingMethod(str, enum.Enum):
     """
 
 
+class AggregationMethod(str, enum.Enum):
+    """Available sample aggregations methods."""
+
+    LOD = "lod"
+    """Compute the limit of detection, defined as the mean plus three times the sample standard
+    deviation."""
+
+    LOQ = "loq"
+    """Compute the limit of quantification, defined as the mean plus ten times the sample standard
+    deviation."""
+
+    SUM = "sum"
+    """sums the feature abundance from samples"""
+
+    MEAN = "avg"
+    """Computes the mean feature abundance from samples"""
+
+    MEDIAN = "median"
+    """Computes the median feature abundance across samples"""
+
+    MIN = "min"
+    """computes the minimum features value across samples"""
+
+    MAX = "max"
+    """computes the maximum features value across samples"""
+
+    STD = "std"
+    """compute the standard deviation of features across samples"""
+
+
 class NormalizationMethod(str, enum.Enum):
     """Available sample normalization methods."""
 

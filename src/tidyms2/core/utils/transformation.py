@@ -4,8 +4,36 @@ from typing import assert_never
 
 import numpy
 
-from ..enums import NormalizationMethod, ScalingMethod
-from .numpy import FloatArray, check_matrix_shape
+from ..enums import AggregationMethod, NormalizationMethod, ScalingMethod
+from .numpy import FloatArray, FloatArray1D, check_matrix_shape
+
+
+def aggregate(X: FloatArray, method: AggregationMethod | str, axis: int = 0) -> FloatArray1D:
+    """Apply an aggregation operation to an array."""
+    check_matrix_shape(X)
+
+    if not isinstance(method, AggregationMethod):
+        method = AggregationMethod(method)
+
+    match method:
+        case AggregationMethod.LOD:
+            return numpy.mean(X, axis=axis) + 3 * numpy.std(X, axis=axis, ddof=1)
+        case AggregationMethod.LOQ:
+            return numpy.mean(X, axis=axis) + 10 * numpy.std(X, axis=axis, ddof=1)
+        case AggregationMethod.MIN:
+            return numpy.min(X, axis=axis)
+        case AggregationMethod.MEAN:
+            return numpy.mean(X, axis=axis)
+        case AggregationMethod.MEDIAN:
+            return numpy.median(X, axis=axis)
+        case AggregationMethod.MAX:
+            return numpy.max(X, axis=axis)
+        case AggregationMethod.SUM:
+            return numpy.sum(X, axis=axis)
+        case AggregationMethod.STD:
+            return numpy.std(X, axis=axis, ddof=1)
+        case _ as never:
+            assert_never(never)
 
 
 def scale(X: FloatArray, method: ScalingMethod | str = ScalingMethod.AUTOSCALING) -> FloatArray:
