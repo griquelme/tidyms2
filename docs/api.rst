@@ -13,5 +13,6 @@ with the :ref:`library architecture <overview>`.
    api/algorithms
    api/io
    api/lcms
+   api/operators
    api/chemistry
    api/simulation

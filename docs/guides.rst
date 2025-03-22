@@ -41,3 +41,4 @@ is recommended to read them in the order listed below:
    guides/lcms
    guides/simulation
    guides/mzml
+   guides/matrix
