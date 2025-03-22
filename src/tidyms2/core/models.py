@@ -21,6 +21,7 @@ import numpy
 import pydantic
 
 from .enums import MSDataMode
+from .exceptions import InvalidFeatureDescriptor
 from .utils.common import create_id
 from .utils.numpy import FloatArray1D, IntArray1D
 
@@ -351,6 +352,20 @@ class FeatureGroup(pydantic.BaseModel):
     def mz(self) -> float:
         """The feature m/z."""
         return self.descriptors["mz"]
+
+    def has_descriptors_in_range(self, **filters: tuple[float, float]) -> bool:
+        """Check if feature descriptors fall between lower and upper bounds.
+
+        :param bounds: descriptor lower and upper bound values.
+        :return: ``True`` if all descriptors fall between the bounds. ``False`` otherwise.
+
+        """
+        for name, (lower, upper) in filters.items():
+            if name not in self.descriptors:
+                raise InvalidFeatureDescriptor(f"Feature group {self.group} does not have descriptor {name}.")
+            if not lower <= self.descriptors[name] <= upper:
+                return False
+        return True
 
 
 class AnnotableFeature(Feature[RoiType], ABC):

@@ -20,12 +20,12 @@ class MatrixOperator(BaseOperator[DataMatrixProcessStatus]):
         self.check_status(data.get_process_status())
 
         if hasattr(self, "pre_apply"):
-            self.pre_apply()  # type: ignore
+            self.pre_apply(data)  # type: ignore
 
         self._apply_operator(data)
 
         if hasattr(self, "post_apply"):
-            self.post_apply()  # type: ignore
+            self.post_apply(data)  # type: ignore
 
         self.update_status(data.get_process_status())
 
@@ -60,7 +60,7 @@ class ColumnFilter(MatrixOperator):
     """A list of feature groups to ignore during filtering."""
 
     def _apply_operator(self, data: DataMatrix) -> None:
-        exclude = set() if self.exclude is None else set(self.exclude)
+        exclude = self.exclude or set()
         data.remove_features(*(g for g in self._create_remove_list(data) if g not in exclude))
 
     @abstractmethod

@@ -91,7 +91,7 @@ class DummyColumnTransformer(ColumnTransformer):
     def _transform_column(self, column: FeatureVector) -> FeatureVector:
         value = self.odd_value if column.feature.group % 2 else self.even_value
         size = column.data.size
-        return FeatureVector(data=numpy.ones(size, dtype=float) * value, feature=column.feature)
+        return FeatureVector(data=numpy.ones(size, dtype=float) * value, feature=column.feature, index=0)
 
     @classmethod
     def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity):
@@ -114,7 +114,7 @@ class DummyRowTransformer(RowTransformer):
     def _transform_row(self, row: SampleVector) -> SampleVector:
         value = self.odd_value if row.sample.meta.order % 2 else self.even_value
         size = row.data.size
-        return SampleVector(data=numpy.ones(size, dtype=float) * value, sample=row.sample)
+        return SampleVector(data=numpy.ones(size, dtype=float) * value, sample=row.sample, index=0)
 
     @classmethod
     def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity):
