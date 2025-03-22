@@ -6,12 +6,12 @@ Tools to process mass spectrometry data.
 TidyMS2 is an upgraded version from [TidyMS](https://github.com/griquelme/tidyms), built from scratch and designed
 to work with Python latest practices.
 
-TidyMS offers a highly customizable framework for processing mass spectrometry datasets:
+TidyMS2 offers a highly customizable framework for processing mass spectrometry datasets:
 
 **For processing MS datasets:**
 
 - tools for processing LC-MS datasets: build pipelines to define how to process your data and TidyMS manages the rest.
-- utilities for working with chemical entities: formulas, formulas generators and formula scorers.
+- optimized for scalability: efficiently processes datasets with thousands of samples while maintaining a minimal memory footprint.
 - test your pipelines with dataset simulation utilities
 - data persistence for intermediate data and results 
 - result visualization
@@ -23,6 +23,12 @@ TidyMS offers a highly customizable framework for processing mass spectrometry d
 
 Installation
 ------------
+
+> [!WARNING]
+> TidyMS2 is currently in early development, and the API may be subject to breaking changes until the 1.0
+> release. Please be aware that future updates may alter functionality or behavior. We recommend keeping
+> an eye on the release notes and updating your usage accordingly. Once the library reaches version 1.0, the
+> API will be considered stable, and breaking changes will adapt to the SemVer policy.
 
 TidyMS is installed using pip:
 
@@ -39,7 +45,7 @@ Getting help
 ------------
 
 The library documentation contains tutorials on a variety on topics. If you weren't able to find an answer
-to your problem, you can use the project [discussion board] (https://github.com/griquelme/tidyms2/discussions)
+to your problem, you can use the project [discussion board](https://github.com/griquelme/tidyms2/discussions)
 
 Development
 -----------
