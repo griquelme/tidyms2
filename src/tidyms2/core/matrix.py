@@ -82,6 +82,10 @@ class DataMatrix:
             where :math:`S_{\textrm{sample}` is the sample standard deviation and :math:`S_{\textrm{QC}` is
             the QC standard deviation.
 
+            a D-ratio of 0.0 means that the technical variance is zero, and all observed variance can be
+            attributed to a biological cause. On the other hand, a D-Ratio of 1.0 or larger, means that
+            the observed variation is mostly technical.
+
             NaN values in the sample or QC data will be ignored in the computation of the standard deviation.
 
             :param sample_groups: a list of sample groups with biological variation. If not provided, uses
@@ -117,6 +121,54 @@ class DataMatrix:
             Xs = self.matrix.get_data(sample_ids=sample_ids)
             Xqc = self.matrix.get_data(sample_ids=qc_sample_ids)
             return metrics.dratio(Xs, Xqc, robust=robust)
+
+        def lod(self) -> FloatArray:
+            r"""Compute the limit of detection (LOD) using blank samples.
+
+            The limit of detection is defined as:
+
+            .. math::
+
+                \textrm{LOD} = \bar{X}_{\textrm{blank}} + 3 * \bar{S}_{\textrm{blank}}
+
+            where :math:`\bar{X}_{\textrm{blank}}` is the feature mean in the blank samples and
+            :math:`\bar{S}_{\textrm{blank}}` is the sample standard deviation of blanks.
+
+            :return: an array with the LOD of each feature. If the LOD cannot be estimated because
+                there are no blank samples or the blank contains only missing values, it with
+                return zero instead.
+
+            """
+            blank_query = self.matrix.query.filter(type=SampleType.SAMPLE).fetch_sample_ids()
+            if not blank_query:
+                return numpy.zeros(shape=(self.matrix.get_n_features(),), dtype=float)
+            blank_samples = blank_query[0][1]
+            blank_data = self.matrix.get_data(sample_ids=blank_samples)
+            return metrics.lod(blank_data)
+
+        def loq(self) -> FloatArray:
+            r"""Compute the limit of quantification (LOQ) using blank samples.
+
+            The limit of quantification is defined as:
+
+            .. math::
+
+                \textrm{LOQ} = \bar{X}_{\textrm{blank}} + 10 * \bar{S}_{\textrm{blank}}
+
+            where :math:`\bar{X}_{\textrm{blank}}` is the feature mean in the blank samples and
+            :math:`\bar{S}_{\textrm{blank}}` is the sample standard deviation of blanks.
+
+            :return: an array with the LOQ of each feature. If the LOQ cannot be estimated because
+                there are no blank samples or the blank contains only missing values, it with
+                return zero instead.
+
+            """
+            blank_query = self.matrix.query.filter(type=SampleType.SAMPLE).fetch_sample_ids()
+            if not blank_query:
+                return numpy.zeros(shape=(self.matrix.get_n_features(),), dtype=float)
+            blank_samples = blank_query[0][1]
+            blank_data = self.matrix.get_data(sample_ids=blank_samples)
+            return metrics.loq(blank_data)
 
         def pca(
             self,
@@ -521,6 +573,7 @@ class DataMatrix:
         """Set all values in the data matrix."""
         validate_data_matrix(self._samples, self._features, data)
         self._data = data.copy()
+        self.check_status()
 
     def set_rows(self, *pairs: tuple[str, FloatArray1D]) -> None:
         """Set row values in the data matrix.
