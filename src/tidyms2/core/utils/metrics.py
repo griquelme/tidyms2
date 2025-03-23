@@ -127,8 +127,30 @@ def correlation(
             assert_never(never)
 
 
+def lod(X: FloatArray) -> FloatArray1D:
+    """Estimates the limit of detection (LOD) of the data.
+
+    :param X: a data matrix
+    """
+    check_matrix_shape(X)
+    lod_ = numpy.nanmean(X, axis=0) + 3 * numpy.nanstd(X, axis=0, ddof=1)
+    lod_[numpy.isnan(lod_)] = 0.0
+    return lod_
+
+
+def loq(X: FloatArray) -> FloatArray1D:
+    """Estimates the limit of quantitation (LOQ) of the data.
+
+    :param X: a data matrix
+    """
+    check_matrix_shape(X)
+    lod_ = numpy.nanmean(X, axis=0) + 10 * numpy.nanstd(X, axis=0, ddof=1)
+    lod_[numpy.isnan(lod_)] = 0.0
+    return lod_
+
+
 def pca(
-    X,
+    X: FloatArray,
     *,
     n_components=2,
     normalization=None,
