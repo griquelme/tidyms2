@@ -399,5 +399,8 @@ def _find_formula_envelope(
 
     min_p_filter = env.p >= min_p
     env.p = env.p[min_p_filter].flatten()
+    norm = env.p.sum()
+    if norm > 0.0:
+        env.p /= norm
     env.M = env.M[min_p_filter].flatten()
     return env

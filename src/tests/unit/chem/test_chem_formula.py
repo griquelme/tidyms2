@@ -1,3 +1,5 @@
+from math import isclose
+
 import pytest
 
 from tidyms2.chem import PTABLE, formula
@@ -180,6 +182,13 @@ def test_get_nominal_mass(formula_data):
     formula_str, nominal, _ = formula_data
     for f_str, n in zip(formula_str, nominal):
         assert formula.Formula(f_str).get_nominal_mass() == n
+
+
+def test_get_isotopic_envelope_n_1_returns_abundance_1():
+    f = formula.Formula("C24H46SPN(18O)2")
+    envelope = f.get_isotopic_envelope(n=1)
+    assert len(envelope.p) == 1
+    assert isclose(envelope.p[0], 1.0)
 
 
 def test_formula_from_dictionary():
