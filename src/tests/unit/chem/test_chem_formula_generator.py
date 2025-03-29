@@ -40,11 +40,12 @@ def test__FormulaCoefficientBounds_from_isotope_str_invalid_element():
 
 def test__FormulaCoefficientBounds_bound_from_mass(chnops_bounds):
     M = 100.0
+    tol = 0.005
 
     # check bounds for 32S. 32 * 4 == 128 > M, 32 * 3 == 96 < M. the upper bound
     # should be 3.
     s32 = PeriodicTable().get_isotope("32S")
-    bounds = chnops_bounds.bounds_from_mass(M)
+    bounds = chnops_bounds.bounds_from_mass(M, tol)
     assert bounds[s32].lower == 0
     assert bounds[s32].upper == 3
 
@@ -85,7 +86,8 @@ def test__FormulaCoefficientBounds_bound_negative_positive_defect_only_neg_d():
 
 def test__FormulaCoefficientBounds_get_nominal_defect_candidates(chnops_bounds):
     M = 100.01
-    m_candidates, d_candidates = chnops_bounds.get_nominal_defect_candidates(M)
+    tol = 0.005
+    m_candidates, d_candidates = chnops_bounds.get_nominal_defect_candidates(M, tol)
     assert len(m_candidates) == 1
     assert m_candidates[0] == 100
     assert np.isclose(d_candidates[0], 0.01)
@@ -98,7 +100,8 @@ def test__FormulaCoefficientBounds_get_nominal_defect_candidates_d_gt_one():
     bounds = {x: (190, 200) for x in isotopes}
     bounds = fg.FormulaCoefficientBounds.from_isotope_str(bounds)
     M = 195.5
-    m_candidates, d_candidates = bounds.get_nominal_defect_candidates(M)
+    tol = 0.001
+    m_candidates, d_candidates = bounds.get_nominal_defect_candidates(M, tol)
     assert len(m_candidates) == 1
     assert m_candidates[0] == 194
     assert np.isclose(d_candidates[0], 1.5)
@@ -308,6 +311,26 @@ def test_FormulaGenerator_brute_force(formula_str):
     col_sort = np.argsort([str(x) for x in isotopes])
     coeff = coeff[:, col_sort]
     assert np.array_equal(coeff, bf_coeff)
+
+
+def test_FormulaGenerator_small_molecules_with_negative_mass_defect():
+    config = FormulaGeneratorConfiguration(
+        bounds={
+            "C": (0, 3),
+            "H": (0, 10),
+            "N": (0, 4),
+            "S": (0, 1),
+        },
+        max_M=500,
+    )
+
+    generator = fg.FormulaGenerator(config)
+
+    tol = 0.005
+    f = Formula("S")
+    M = f.get_exact_mass() - tol / 2
+    generator.generate_formulas(M, tol)
+    assert generator.get_n_results() == 1
 
 
 @pytest.mark.parametrize("formula_str", ["C9H14", "C7H8N2"])

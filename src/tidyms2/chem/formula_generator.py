@@ -174,7 +174,7 @@ class FormulaCoefficientBounds(pydantic.BaseModel):
     def __getitem__(self, item):
         return self.bounds[item]
 
-    def bounds_from_mass(self, M: float) -> FormulaCoefficientBounds:
+    def bounds_from_mass(self, M: float, tol: float) -> FormulaCoefficientBounds:
         """Compute the mass-based bounds for each isotope.
 
         The bounds are refined using the values for each isotope.
@@ -183,7 +183,7 @@ class FormulaCoefficientBounds(pydantic.BaseModel):
         bounds = dict()
         for i, b in self.bounds.items():
             lower = max(0, b.lower)
-            upper = min(int(M / i.m), b.upper)
+            upper = min(int((M + tol) / i.m), b.upper)
             bounds[i] = IsotopeCoeffBounds(lower=lower, upper=upper)
         return FormulaCoefficientBounds(bounds=bounds)
 
@@ -203,11 +203,11 @@ class FormulaCoefficientBounds(pydantic.BaseModel):
             pos=MassBounds(lower=min_pos, upper=max_pos), neg=MassBounds(lower=min_neg, upper=max_neg)
         )
 
-    def get_nominal_defect_candidates(self, M: float) -> tuple[list[int], list[float]]:
+    def get_nominal_defect_candidates(self, M: float, tol: float) -> tuple[list[int], list[float]]:
         """Split mass into possible values of nominal mass and mass defect."""
         dp_min, dp_max, dn_min, dn_max = self.get_defect_bounds()
-        m_min = int(M - dn_max - dp_max) + 1
-        m_max = int(M - dp_min - dn_min) + 1
+        m_min = int(M - tol - dn_max - dp_max) + 1
+        m_max = int(M + tol - dp_min - dn_min) + 1
         m_candidates = list(range(m_min, m_max))
         d_candidates = [M - x for x in m_candidates]
         return m_candidates, d_candidates
@@ -464,13 +464,13 @@ def _generate_formulas(
     max_defect: float,
 ):
     """Find formulas compatible with a given mass."""
-    bounds = bounds.bounds_from_mass(M)
+    bounds = bounds.bounds_from_mass(M, tol)
     # possible values of nominal mass and mass defect based on the coefficient bounds.
-    m_candidates, d_candidates = bounds.get_nominal_defect_candidates(M)
+    m_candidates, d_candidates = bounds.get_nominal_defect_candidates(M, tol)
     res = dict()
     n = 0  # number of valid formulas
     for m, d in zip(m_candidates, d_candidates):
-        if (d < min_defect) or (d > max_defect):
+        if (d + tol < min_defect) or (d - tol > max_defect):
             continue
 
         query = MassQuery.from_coeffs(m, d, tol, bounds)
