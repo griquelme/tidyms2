@@ -44,9 +44,7 @@ class FormulaGenerator:
 
         """
         bounds = FormulaCoefficientBounds.from_isotope_str(config.bounds)
-        bounds_max_M = max(v.upper * k.m for k, v in bounds.bounds.items())
-        max_M = bounds_max_M if config.max_M is None else config.max_M
-        self.bounds = bounds.bounds_from_mass(max_M)
+        self.bounds = bounds.bounds_from_mass(config.max_M, 0.0)
 
         dp_min, dp_max, dn_min, dn_max = self.bounds.get_defect_bounds()
 
@@ -65,8 +63,8 @@ class FormulaGenerator:
         # (negative) isotopes are being used. This is a hack that prevents
         # making changes in the formula generation code...
         _add_dummy_isotope(pos_restrictions, neg_restrictions)
-        self.pos = pos_restrictions.make_coefficients(max_M, reverse=True)
-        self.neg = neg_restrictions.make_coefficients(max_M)
+        self.pos = pos_restrictions.make_coefficients(config.max_M, reverse=True)
+        self.neg = neg_restrictions.make_coefficients(config.max_M)
 
     def __repr__(self):
         return f"FormulaGenerator(bounds={self.bounds.bounds})"
