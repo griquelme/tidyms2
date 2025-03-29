@@ -167,7 +167,7 @@ def create_consensus_annotation(annotations: list[Annotation]) -> dict[int, Grou
     graph = create_annotation_graph(annotations)
     consensus = dict()
 
-    # Create group annotations on groups of isotopologues to provide a common group id
+    # provide a common isotopologue group id
     all_mmi = {x.group for x in graph if x.index == 0}
     isotopologue_group_id = 0
     while all_mmi:
@@ -196,15 +196,22 @@ def create_annotation_graph(annotations: list[Annotation]) -> AnnotationGraph:
 
     graph.count_votes()
 
+    # first remove edges that connect multiple MMIs or edges that connect MMI with
+    # nodes with a different charge state
     for node in graph:
         if node.index == 0:
             remove_invalid_mmi_neighbors(graph, node)
 
+    # then for non-MMI nodes keep only the most voted edge
+    for node in graph:
+        if node.index != 0:
+            solve_non_mmi_conflict(graph, node)
+
+    # finally remove repeated edges connecting MMI nodes to nodes with repeated
+    # isotopologue indices
     for node in graph:
         if node.index == 0:
             solve_mmi_conflict(graph, node)
-        else:
-            solve_non_mmi_conflict(graph, node)
 
     graph.remove_isolated()
 
