@@ -330,7 +330,7 @@ class MassQuery(pydantic.BaseModel):
     d: float
     """mass defect of the query."""
 
-    q: pydantic.PositiveInt
+    q: pydantic.NonNegativeInt
     """quotient of the division of `m` by 12."""
 
     r: pydantic.NonNegativeInt

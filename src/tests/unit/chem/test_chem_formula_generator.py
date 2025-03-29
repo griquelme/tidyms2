@@ -333,6 +333,25 @@ def test_FormulaGenerator_small_molecules_with_negative_mass_defect():
     assert generator.get_n_results() == 1
 
 
+@pytest.mark.parametrize("f_str", ["H2", "Li"])
+def test_FormulaGenerator_small_molecules_with_mass_lower_than_C(f_str: str):
+    config = FormulaGeneratorConfiguration(
+        bounds={
+            "C": (0, 3),
+            "H": (0, 10),
+            "Li": (0, 1),
+        },
+        max_M=500,
+    )
+
+    generator = fg.FormulaGenerator(config)
+
+    tol = 0.005
+    M = Formula("H2").get_exact_mass()
+    generator.generate_formulas(M, tol)
+    assert generator.get_n_results() == 1
+
+
 @pytest.mark.parametrize("formula_str", ["C9H14", "C7H8N2"])
 def test_FormulaGenerator_brute_force_no_negative_isotopes(formula_str):
     # Test correctness of the algorithm by comparing the results with the
