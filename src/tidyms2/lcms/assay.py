@@ -20,6 +20,7 @@ def create_lcms_assay(
     annotate_isotopologues: bool = True,
     on_disk: bool = False,
     max_workers: int = 1,
+    storage_path: str | None = None,
 ) -> Assay[MZTrace, Peak]:
     """Create a new Assay instance for LC-MS data.
 
@@ -31,10 +32,11 @@ def create_lcms_assay(
     :param annotate_isotopologues: If set to ``True`` and isotopologue annotation step is included in
         the sample pipeline.
     :param on_disk: store assay results on disk to reduce memory consumption. Recommended for large datasets.
+    :param storage_path: path to the DB file to store assay data. Only used if `on_disk` is set to ``True``.
 
     """
     if on_disk:
-        host = f"{id}.sqlite"
+        host = storage_path or f"{id}.sqlite"
         storage = SQLiteAssayStorage(id, host, MZTrace, Peak)
     else:
         storage = OnMemoryAssayStorage(id, MZTrace, Peak)
