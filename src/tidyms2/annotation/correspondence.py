@@ -463,7 +463,8 @@ def _find_merge_candidates(centroids: FloatArray, groups: IntArray1D, tol: float
     """Group a pair of feature groups if all of their descriptor centroids are closer than the tolerance."""
     sorted_centroids_index = np.lexsort(centroids.T)
     groups = groups[sorted_centroids_index]
-    diff_rows = np.all(np.diff(centroids[sorted_centroids_index], axis=0) < tol, axis=1)
+    rows_close = np.abs(np.diff(centroids[sorted_centroids_index], axis=0)) < tol
+    diff_rows = np.all(rows_close, axis=1)
 
     candidates = list()
     for i in np.where(diff_rows)[0]:
