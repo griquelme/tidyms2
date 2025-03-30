@@ -6,11 +6,13 @@ from typing import Generic, Iterable, Literal, overload
 from uuid import UUID
 
 from ..core.exceptions import UnprocessedSampleError
+from ..core.matrix import DataMatrix
 from ..core.models import Annotation, FeatureType, RoiType, Sample
 from ..core.operators.assay import AssayOperator, MissingImputer
 from ..core.operators.pipeline import Pipeline
 from ..core.storage import AssayStorage
 from .executors import SampleProcessor
+from .utils import create_feature_groups, create_matrix_data
 
 logger = getLogger("assay")
 
@@ -48,6 +50,24 @@ class Assay(Generic[RoiType, FeatureType]):
         for sample in samples:
             logger.info(f"Added sample `{sample.id}` with path `{sample.path}` to {self.id}.")
             self._sample_queue[sample.id] = sample
+
+    def create_data_matrix(self, matrix_value: str) -> DataMatrix:
+        """Create a data matrix using data from the assay pipeline.
+
+        :param matrix_value: the descriptor name used to build the matrix data.
+
+        """
+        descriptors = self.fetch_feature_table()
+        if matrix_value not in descriptors:
+            raise ValueError(f"{matrix_value} is not a valid feature descriptor.")
+        values = descriptors[matrix_value]
+        groups = self._storage.fetch_feature_groups()
+        samples = self.fetch_samples()
+        annotations = self.fetch_feature_annotations()
+        fill_values = self._storage.fetch_fill_values()
+
+        data = create_matrix_data(values, annotations, samples, fill_values)
+        return DataMatrix(samples, groups, data)
 
     def fetch_samples(self, queued: bool = False) -> list[Sample]:
         """Retrieve a list of queued or processed samples in the assay.
@@ -131,3 +151,9 @@ class Assay(Generic[RoiType, FeatureType]):
 
     def _empty_sample_queue(self) -> None:
         self._sample_queue = OrderedDict()
+
+    def _create_sample_groups(self) -> None:
+        descriptors = self.fetch_feature_table()
+        annotations = self.fetch_feature_annotations()
+        feature_groups = create_feature_groups(descriptors, annotations)
+        self._storage.add_feature_groups(*feature_groups)
