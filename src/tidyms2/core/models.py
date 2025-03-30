@@ -347,6 +347,9 @@ class FeatureGroup(pydantic.BaseModel):
     descriptors: dict[str, float]
     """Aggregated feature descriptors."""
 
+    name: str | None = None
+    """An optional name for the feature group."""
+
     @pydantic.computed_field(repr=False)
     @cached_property
     def mz(self) -> float:
