@@ -16,23 +16,21 @@ def random_seed():
 
 @pytest.fixture(scope="session")
 def data_dir():
-    tmp_data_path = pathlib.Path(__file__).parent / "data"
-    if not tmp_data_path.exists():
-        tmp_data_path.mkdir(exist_ok=True)
-        gitignore = tmp_data_path / ".gitignore"
-        gitignore.write_text("*\n")
-    return tmp_data_path
+    return pathlib.Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="session")
 def raw_data_dir(data_dir: pathlib.Path) -> pathlib.Path:
-    res = data_dir / "raw"
+    raw_data_dir = data_dir / "raw"
 
-    if not res.exists():
-        res.mkdir()
+    if not raw_data_dir.exists():
+        raw_data_dir.mkdir()
         dataset = "test-raw-data"
-        download_dataset(dataset, res, token=os.getenv("GH_PAT"))
-    return res
+        download_dataset(dataset, raw_data_dir, token=os.getenv("GH_PAT"))
+
+    gitignore = raw_data_dir / ".gitignore"
+    gitignore.write_text("*\n")
+    return raw_data_dir
 
 
 @pytest.fixture(scope="module")
