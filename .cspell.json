@@ -80,6 +80,7 @@
         "ndarray",
         "ndimage",
         "Neumann",
+        "normalised",
         "notoc",
         "nrows",
         "numpy",
@@ -90,6 +91,7 @@
         "pearsonr",
         "popleft",
         "proba",
+        "progenesis",
         "pydantic",
         "pyright",
         "pytest",
@@ -136,6 +138,7 @@
     "ignorePaths": [
         "docs/_build/*",
         "docs/conf.py",
+        "src/tests/data/*",
         "Makefile",
         "make.bat",
         "*.mzML",
