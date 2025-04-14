@@ -599,7 +599,7 @@ class _TempRoi:
         found_index = list()
         missing_index = list()
         found_scans = set(self.scan)
-        for idx, scan in enumerate(trace_scans[start_idx:end_idx]):
+        for idx, scan in enumerate(trace_scans[start_idx:end_idx], start=start_idx):
             if scan in found_scans:
                 found_index.append(idx)
             else:
@@ -608,7 +608,7 @@ class _TempRoi:
         trace_mz = np.ones(shape=trace_scans.size, dtype=float) * self.mz_mean
         trace_mz[found_index] = self.mz
 
-        trace_sp = np.ones(shape=trace_scans.size, dtype=float)
+        trace_sp = np.zeros(shape=trace_scans.size, dtype=float)
         trace_sp[found_index] = self.spint
         if trace_scans.size > len(self.mz):
             trace_sp[missing_index] = np.interp(missing_index, found_index, self.spint)
@@ -617,13 +617,13 @@ class _TempRoi:
             slope = (trace_sp[start_idx + 1] - trace_sp[start_idx]) / (trace_rt[start_idx + 1] - trace_rt[start_idx])
             intercept = trace_sp[start_idx]
             for idx in range(start_pad_idx, start_idx):
-                trace_sp[idx] = idx * slope + intercept
+                trace_sp[idx] = max(0.0, (idx - start_idx) * slope + intercept)
 
         if end_idx < end_pad_idx:
             slope = (trace_sp[end_idx - 1] - trace_sp[end_idx - 2]) / (trace_rt[end_idx - 2] - trace_rt[end_idx - 1])
             intercept = trace_sp[end_idx - 2]
             for idx in range(end_idx, end_pad_idx):
-                trace_sp[idx] = idx * slope + intercept
+                trace_sp[idx] = max(0.0, (idx - end_idx - 1) * slope + intercept)
         return MZTrace(sample=sample, time=trace_rt, mz=trace_mz, scan=trace_scans, spint=trace_sp)
 
     def convert_to_roi(self, rt: np.ndarray, scans: np.ndarray, sample: Sample) -> MZTrace:
