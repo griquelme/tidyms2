@@ -37,4 +37,4 @@ integration-tests:
 
 .PHONY: coverage
 coverage:
-	uv run pytest --cov=src/tidyms2 && uv run coverage html
+	uv run pytest src/tests --cov=src/tidyms2 && uv run coverage html
