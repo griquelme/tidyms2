@@ -745,13 +745,7 @@ def validate_data_matrix(samples: Sequence[Sample], features: Sequence[FeatureGr
         msg = "Features must have a unique group label."
         raise exceptions.RepeatedIdError(msg)
 
-    if len({x.id for x in samples}) < n_samples:
-        msg = "Samples must have a unique id."
-        raise exceptions.RepeatedIdError(msg)
-
-    if len({x.meta.order for x in samples}) < n_samples:
-        msg = "Samples must have a unique order."
-        raise exceptions.RepeatedSampleOrder(msg)
+    Sample.validate_samples(*samples)
 
 
 def sort_matrix_columns(features: Sequence[FeatureGroup], data: FloatArray) -> tuple[list[FeatureGroup], FloatArray]:
