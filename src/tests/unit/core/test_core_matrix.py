@@ -103,17 +103,17 @@ class TestDataMatrix:
         data = numpy.random.normal(loc=100.0, size=(3, 5))
         matrix = DataMatrix(samples, features, data)
 
-        assert matrix.list_samples() == list(reversed(samples))
+        assert matrix.samples == tuple(reversed(samples))
         assert data is not matrix.get_data()
         assert numpy.array_equal(data[::-1], matrix.get_data())
 
     @pytest.fixture
     def samples(self, tmp_path: pathlib.Path):
-        return [create_sample(tmp_path, k) for k in range(self.n_samples)]
+        return tuple(create_sample(tmp_path, k) for k in range(self.n_samples))
 
     @pytest.fixture
     def features(self):
-        return [create_feature_group(k) for k in range(self.n_features)]
+        return tuple(create_feature_group(k) for k in range(self.n_features))
 
     @pytest.fixture
     def matrix(self, samples, features):
@@ -126,11 +126,11 @@ class TestDataMatrix:
     def test_get_n_samples(self, matrix):
         assert matrix.get_n_samples() == self.n_samples
 
-    def test_list_samples(self, matrix, samples):
-        assert samples == matrix.list_samples()
+    def test_list_samples(self, matrix: DataMatrix, samples):
+        assert samples == matrix.samples
 
     def test_list_features(self, matrix, features):
-        assert features == matrix.list_features()
+        assert features == matrix.features
 
     def test_get_columns_missing_group_raises_error(self, matrix: DataMatrix):
         with pytest.raises(exceptions.FeatureGroupNotFound):
@@ -138,14 +138,14 @@ class TestDataMatrix:
             matrix.get_columns(invalid_group)
 
     def test_get_columns_single_column(self, matrix: DataMatrix):
-        expected_feature = matrix.list_features()[1]
+        expected_feature = matrix.features[1]
         column = matrix.get_columns(expected_feature.group)[0]
         assert column.feature == expected_feature
         assert numpy.array_equal(column.data, matrix.get_data()[:, 1])
 
     def test_get_columns_multiple_columns(self, matrix: DataMatrix):
         index = [1, 3, 4]
-        expected_features = matrix.list_features()
+        expected_features = matrix.features
         query_groups = [expected_features[x].group for x in index]
         columns = matrix.get_columns(*query_groups)
         for ind, col in zip(index, columns):
@@ -153,7 +153,7 @@ class TestDataMatrix:
             assert numpy.array_equal(col.data, matrix.get_data()[:, ind])
 
     def test_get_columns_no_groups_retrieve_all_columns(self, matrix: DataMatrix):
-        expected_features = matrix.list_features()
+        expected_features = matrix.features
         columns = matrix.get_columns()
         for col, ft, col_data in zip(columns, expected_features, matrix.get_data().T):
             assert col.feature == ft
@@ -165,14 +165,14 @@ class TestDataMatrix:
             matrix.get_rows(invalid_sample_id)
 
     def test_get_samples_single_sample(self, matrix: DataMatrix):
-        expected_sample = matrix.list_samples()[1]
+        expected_sample = matrix.samples[1]
         row = matrix.get_rows(expected_sample.id)[0]
         assert row.sample == expected_sample
         assert numpy.array_equal(row.data, matrix.get_data()[1])
 
     def test_get_samples_multiple_samples(self, matrix: DataMatrix):
         index = [1, 3, 4]
-        expected_samples = matrix.list_samples()
+        expected_samples = matrix.samples
         query_ids = [expected_samples[x].id for x in index]
         rows = matrix.get_rows(*query_ids)
         for ind, row in zip(index, rows):
@@ -180,7 +180,7 @@ class TestDataMatrix:
             assert numpy.array_equal(row.data, matrix.get_data()[ind])
 
     def test_get_samples_no_ids_retrieves_all_samples(self, matrix: DataMatrix):
-        expected_samples = matrix.list_samples()
+        expected_samples = matrix.samples
         rows = matrix.get_rows()
         for row, sample, data_row in zip(rows, expected_samples, matrix.get_data()):
             assert row.sample == sample
@@ -192,7 +192,7 @@ class TestDataMatrix:
         assert data.shape == expected_shape
 
     def test_get_data_sample_subset(self, matrix: DataMatrix):
-        all_samples = matrix.list_samples()
+        all_samples = matrix.samples
         sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
         data = matrix.get_data(sample_ids=sample_ids)
         expected_shape = (len(sample_ids), matrix.get_n_features())
@@ -207,7 +207,7 @@ class TestDataMatrix:
             matrix.get_data(sample_ids=sample_ids)
 
     def test_get_data_feature_subset(self, matrix: DataMatrix):
-        all_features = matrix.list_features()
+        all_features = matrix.features
         feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
         data = matrix.get_data(feature_groups=feature_groups)
         expected_shape = (matrix.get_n_samples(), len(feature_groups))
@@ -283,7 +283,7 @@ class TestDataMatrix:
 
     def test_set_row_single_row(self, matrix: DataMatrix):
         expected = matrix.get_data().copy()
-        sample_id = matrix.list_samples()[2].id
+        sample_id = matrix.samples[2].id
         row = (sample_id, numpy.random.normal(size=matrix.get_n_features()))
         idx = matrix.get_sample_index(sample_id)[0]
         expected[idx] = row[1]
@@ -296,19 +296,19 @@ class TestDataMatrix:
             matrix.set_rows(row)
 
     def test_set_rows_non_matching_size_raise_error(self, matrix: DataMatrix):
-        row = (matrix.list_samples()[0].id, numpy.random.normal(size=matrix.get_n_features() + 1))
+        row = (matrix.samples[0].id, numpy.random.normal(size=matrix.get_n_features() + 1))
         with pytest.raises(ValueError):
             matrix.set_rows(row)
 
     def test_set_rows_non_float_dtype_raise_error(self, matrix: DataMatrix):
-        row = (matrix.list_samples()[0].id, numpy.random.normal(size=matrix.get_n_features()).astype(int))
+        row = (matrix.samples[0].id, numpy.random.normal(size=matrix.get_n_features()).astype(int))
         with pytest.raises(TypeError):
             matrix.set_rows(row)
 
     def test_set_rows_multiple_rows(self, matrix: DataMatrix):
         expected = matrix.get_data().copy()
         rows = list()
-        for sample_id in [x.id for x in matrix.list_samples()[::2]]:
+        for sample_id in [x.id for x in matrix.samples[::2]]:
             row = (sample_id, numpy.random.normal(size=matrix.get_n_features()))
             rows.append(row)
             idx = matrix.get_sample_index(sample_id)[0]
@@ -349,7 +349,7 @@ class TestDataMatrix:
 
         # check feature order
         remaining_features = [x for x in features if x.group != rm_group]
-        assert remaining_features == matrix.list_features()
+        assert remaining_features == matrix.features
 
     def test_remove_features_remove_multiple_features(self, matrix: DataMatrix, features: list[FeatureGroup]):
         rm_groups = [features[3].group, features[2].group]  # using unsorted order to check that it still works
@@ -370,7 +370,7 @@ class TestDataMatrix:
 
         # check feature order
         remaining_features = [x for x in features if x.group not in rm_groups]
-        assert remaining_features == matrix.list_features()
+        assert remaining_features == matrix.features
 
     def test_remove_samples_remove_invalid_sample_raises_error(self, matrix: DataMatrix):
         with pytest.raises(exceptions.SampleNotFound):
@@ -405,7 +405,7 @@ class TestDataMatrix:
 
         # check sample order
         remaining_samples = [x for x in samples if x.id != rm_id]
-        assert remaining_samples == matrix.list_samples()
+        assert remaining_samples == matrix.samples
 
     def test_remove_samples_remove_multiple_samples(self, matrix: DataMatrix, samples: list[Sample]):
         rm_ids = [samples[3].id, samples[2].id]  # using unsorted order to check that it still works
@@ -426,20 +426,20 @@ class TestDataMatrix:
 
         # check sample order
         remaining_samples = [x for x in samples if x.id not in rm_ids]
-        assert remaining_samples == matrix.list_samples()
+        assert remaining_samples == matrix.samples
 
     def test_combine_single_matrix_return_same_matrix(self, matrix: DataMatrix):
         combined = DataMatrix.combine(matrix)
         assert numpy.array_equal(combined.get_data(), matrix.get_data())
-        assert combined.list_samples() == matrix.list_samples()
-        assert combined.list_features() == matrix.list_features()
+        assert combined.samples == matrix.samples
+        assert combined.features == matrix.features
 
     def test_combine_no_matrices_raises_error(self):
         with pytest.raises(ValueError):
             DataMatrix.combine()
 
     def test_combine_multiple_matrices(self, matrix: DataMatrix):
-        all_samples = matrix.list_samples()
+        all_samples = matrix.samples
         sample_ids1 = [x.id for x in all_samples[:3]]
         sample_ids2 = [x.id for x in all_samples[3:8]]
         sample_ids3 = [x.id for x in all_samples[8:]]
@@ -450,52 +450,52 @@ class TestDataMatrix:
         combined = DataMatrix.combine(sub1, sub2, sub3)
 
         assert numpy.array_equal(combined.get_data(), matrix.get_data())
-        assert combined.list_samples() == matrix.list_samples()
-        assert combined.list_features() == matrix.list_features()
+        assert combined.samples == matrix.samples
+        assert combined.features == matrix.features
 
     def test_create_submatrix_no_sample_ids_no_feature_groups_return_equal_matrix(self, matrix: DataMatrix):
         actual = matrix.create_submatrix()
 
-        assert actual.list_features() == matrix.list_features()
-        assert actual.list_samples() == matrix.list_samples()
+        assert actual.features == matrix.features
+        assert actual.samples == matrix.samples
         assert numpy.array_equal(actual.get_data(), matrix.get_data())
 
     def test_create_submatrix_with_sample_ids(self, matrix: DataMatrix):
-        all_samples = matrix.list_samples()
+        all_samples = matrix.samples
         sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
         actual = matrix.create_submatrix(sample_ids=sample_ids)
 
-        sub_matrix_samples = actual.list_samples()
+        sub_matrix_samples = actual.samples
         assert len(sub_matrix_samples) == len(sample_ids)
         assert all(actual.has_sample(x) for x in sample_ids)
 
-        assert actual.list_features() == matrix.list_features()
+        assert actual.features == matrix.features
         assert numpy.array_equal(actual.get_data(), matrix.get_data(sample_ids=sample_ids))
 
     def test_create_submatrix_with_feature_groups(self, matrix: DataMatrix):
-        all_features = matrix.list_features()
+        all_features = matrix.features
         feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
         actual = matrix.create_submatrix(feature_groups=feature_groups)
 
-        sub_matrix_feature_groups = actual.list_features()
+        sub_matrix_feature_groups = actual.features
         assert len(sub_matrix_feature_groups) == len(feature_groups)
         assert all(actual.has_feature(x) for x in feature_groups)
 
-        assert actual.list_samples() == matrix.list_samples()
+        assert actual.samples == matrix.samples
         assert numpy.array_equal(actual.get_data(), matrix.get_data(feature_groups=feature_groups))
 
     def test_create_submatrix_with_feature_groups_and_sample_ids(self, matrix: DataMatrix):
-        all_features = matrix.list_features()
+        all_features = matrix.features
         feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]
-        all_samples = matrix.list_samples()
+        all_samples = matrix.samples
         sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
         actual = matrix.create_submatrix(sample_ids=sample_ids, feature_groups=feature_groups)
 
-        sub_matrix_samples = actual.list_samples()
+        sub_matrix_samples = actual.samples
         assert len(sub_matrix_samples) == len(sample_ids)
         assert all(actual.has_sample(x) for x in sample_ids)
 
-        sub_matrix_feature_groups = actual.list_features()
+        sub_matrix_feature_groups = actual.features
         assert len(sub_matrix_feature_groups) == len(feature_groups)
         assert all(actual.has_feature(x) for x in feature_groups)
 
@@ -504,13 +504,13 @@ class TestDataMatrix:
         assert numpy.array_equal(actual.get_data(), expected_data)
 
     def test_create_submatrix_with_missing_sample_ids_raise_error(self, matrix: DataMatrix):
-        all_samples = matrix.list_samples()
+        all_samples = matrix.samples
         sample_ids = [all_samples[1].id, all_samples[5].id, "invalid_sample_id"]
         with pytest.raises(exceptions.SampleNotFound):
             matrix.create_submatrix(sample_ids=sample_ids)
 
     def test_create_submatrix_with_missing_feature_group_raise_error(self, matrix: DataMatrix):
-        all_features = matrix.list_features()
+        all_features = matrix.features
         invalid_group = 1203
         feature_groups = [all_features[1].group, all_features[5].group, invalid_group]
         with pytest.raises(exceptions.FeatureGroupNotFound):
