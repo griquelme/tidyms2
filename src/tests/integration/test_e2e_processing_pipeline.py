@@ -32,11 +32,17 @@ def test_e2e_lcms_assay_on_disk_storage_sequential_sample_executor(lcms_sample_f
         on_disk=True,
         storage_path=str(tmp_path / "data.db"),
     )
-    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(10))
+    n_samples = 10
+    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(n_samples))
     assay.add_samples(*samples)
 
     assay.process_samples()
     assay.process_assay()
+
+    matrix = assay.create_data_matrix()
+
+    assert matrix.get_n_samples() == n_samples
+    assert matrix.get_n_features() == 6  # see lcms_sample_factory on conftest
 
 
 def test_e2e_lcms_assay_on_memory_storage_parallel_sample_executor(lcms_sample_factory):
@@ -48,11 +54,17 @@ def test_e2e_lcms_assay_on_memory_storage_parallel_sample_executor(lcms_sample_f
         annotate_isotopologues=True,
         max_workers=2,
     )
-    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(10))
+    n_samples = 10
+    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(n_samples))
     assay.add_samples(*samples)
 
     assay.process_samples()
     assay.process_assay()
+
+    matrix = assay.create_data_matrix()
+
+    assert matrix.get_n_samples() == n_samples
+    assert matrix.get_n_features() == 6  # see lcms_sample_factory on conftest
 
 
 def test_e2e_lcms_assay_on_disk_storage_parallel_sample_executor(lcms_sample_factory, tmp_path):
@@ -66,8 +78,14 @@ def test_e2e_lcms_assay_on_disk_storage_parallel_sample_executor(lcms_sample_fac
         max_workers=2,
         storage_path=str(tmp_path / "data.db"),
     )
-    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(10))
+    n_samples = 10
+    samples = (lcms_sample_factory(f"sample-{k}", order=k) for k in range(n_samples))
     assay.add_samples(*samples)
 
     assay.process_samples()
     assay.process_assay()
+
+    matrix = assay.create_data_matrix()
+
+    assert matrix.get_n_samples() == n_samples
+    assert matrix.get_n_features() == 6  # see lcms_sample_factory on conftest
