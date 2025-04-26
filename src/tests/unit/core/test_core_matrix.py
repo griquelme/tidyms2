@@ -64,7 +64,7 @@ class TestValidateDataMatrix:
         with pytest.raises(ValueError):
             validate_data_matrix(samples, features, data)
 
-    def test_create_matrix_without_samples_raises_error(self, tmp_path: pathlib.Path):
+    def test_create_matrix_without_samples_raises_error(self):
         samples = list()
         features = [create_feature_group(x) for x in range(5)]
         data = numpy.random.normal(loc=100.0, size=(2, 5))
