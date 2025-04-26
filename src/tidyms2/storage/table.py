@@ -14,7 +14,7 @@ class FeatureTable:
         self._descriptors: dict[str, list[float]] = dict()
         self._annotations: list[Annotation] = list()
         self._fill_values: dict[str, dict[int, float]] = dict()
-        self._feature_groups: dict[int, FeatureGroup]
+        self._feature_groups: dict[int, FeatureGroup] = dict()
 
         self._sample_to_features: dict[str, set[UUID]] = dict()
         self._group_to_features: dict[int, set[UUID]] = dict()
@@ -131,6 +131,7 @@ class FeatureTable:
             index = self._feature_to_index[p.id]
             ann = self._annotations[index]
             setattr(ann, p.field, p.value)
+            self._update_group_to_features(p)
 
     def list_feature_groups(self) -> list[int]:
         """List all feature groups stored in the assay."""
@@ -145,3 +146,9 @@ class FeatureTable:
         for p in patches:
             index = self._feature_to_index[p.id]
             self._descriptors[p.descriptor][index] = p.value
+
+    def _update_group_to_features(self, patch: AnnotationPatch):
+        """Update the group to feature id mapping when the group annotation is update."""
+        if patch.field == "group" and patch.value > -1:
+            group_set = self._group_to_features.setdefault(patch.value, set())
+            group_set.add(patch.id)
