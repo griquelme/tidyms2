@@ -71,7 +71,7 @@ class TestBlankCorrector:
 
     def test_with_excluded_samples(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
-        excluded = data.list_samples()[2].id
+        excluded = data.samples[2].id
         row_before = data.get_rows(excluded)[0]
         op = operators.BlankCorrector(exclude_samples=[excluded])
         op.apply(data)
@@ -89,7 +89,7 @@ class TestBlankCorrector:
 
     def test_with_excluded_features_and_samples(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
-        excluded_sample = data.list_samples()[2].id
+        excluded_sample = data.samples[2].id
         col_before = data.get_columns(1)[0]
         row_before = data.get_rows(excluded_sample)[0]
         op = operators.BlankCorrector(exclude_features=[1], exclude_samples=[excluded_sample])
@@ -160,14 +160,14 @@ class TestSampleFilter:
         op = operators.SampleFilter(group="group-a")  # type: ignore
         op.apply(data)
         assert data.get_n_samples()
-        assert all(sample.meta.group == "group-b" for sample in data.list_samples())
+        assert all(sample.meta.group == "group-b" for sample in data.samples)
 
     def test_remove_sample_type(self, samples, adducts):
         data = simulate_data_matrix(adducts, samples)
         op = operators.SampleFilter(type="qc")  # type: ignore
         op.apply(data)
         assert data.get_n_samples()
-        assert all(sample.meta.type == "sample" for sample in data.list_samples())
+        assert all(sample.meta.type == "sample" for sample in data.samples)
 
 
 class TestFeatureFilter:
@@ -265,7 +265,7 @@ class TestCVFilter:
     def test_default(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
         # only adduct 2 should be removed as it has CV ~ 1.0 in the QC type
-        rm_group = data.list_features()[1].group
+        rm_group = data.features[1].group
         assert data.get_n_features() == 2
         assert data.has_feature(rm_group)
         op = operators.CVFilter(ub=0.01)
@@ -285,7 +285,7 @@ class TestCVFilter:
     def test_using_filter(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
         # only adduct 1 should be removed as it has CV ~ 1.0 in the group-b
-        rm_group = data.list_features()[0].group
+        rm_group = data.features[0].group
         assert data.get_n_features() == 2
         assert data.has_feature(rm_group)
         op = operators.CVFilter(ub=0.01, filter={"group": "group-b"})
@@ -359,7 +359,7 @@ class TestDRatioFilter:
     def test_default(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
         # only adduct 1 should be removed as its D-ratio is > 1.0
-        rm_group = data.list_features()[0].group
+        rm_group = data.features[0].group
         assert data.get_n_features() == 2
         assert data.has_feature(rm_group)
         op = operators.DRatioFilter()
@@ -426,7 +426,7 @@ class TestDetectionRateFilter:
     def test_default(self, adducts, samples):
         data = simulate_data_matrix(adducts, samples)
         # only adduct 1 should be removed as it has DR ~ 0.5 in the sample sample type
-        rm_group = data.list_features()[0].group
+        rm_group = data.features[0].group
         assert data.get_n_features() == 2
         assert data.has_feature(rm_group)
         op = operators.DetectionRateFilter()

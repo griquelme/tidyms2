@@ -8,6 +8,7 @@ from typing import Self, Sequence
 
 import numpy
 import pydantic
+from typing_extensions import deprecated
 
 from . import exceptions
 from .dataflow import DataMatrixProcessStatus
@@ -266,7 +267,7 @@ class DataMatrix:
         def fetch_sample_ids(self) -> list[tuple[Sequence[str], list[str]]]:
             """Execute a sample query."""
             filter_by = self._filter_by or dict()
-            filtered = self._filter_samples(self.matrix.list_samples(), **filter_by)
+            filtered = self._filter_samples(self.matrix.samples, **filter_by)
 
             group_by = self._group_by or tuple()
             grouped = self._group_by_samples(filtered, *group_by)
@@ -283,7 +284,7 @@ class DataMatrix:
             raise NotImplementedError
 
         @staticmethod
-        def _filter_samples(samples: list[Sample], **kwargs) -> list[Sample]:
+        def _filter_samples(samples: Sequence[Sample], **kwargs) -> list[Sample]:
             """Select a subset of samples using metadata."""
             filtered = list()
             for sample in samples:
@@ -368,15 +369,40 @@ class DataMatrix:
         validate: bool = True,
     ):
         self._data = data
-        self._samples = [x for x in samples]
-        self._features = [x for x in features]
+        self._samples = tuple(x for x in samples)
+        self._features = tuple(x for x in features)
         self._status = DataMatrixProcessStatus()
-        self.metrics = self.Metrics(self)
-        self.query = self.Query(self)
-        self.io = self.IO(self)
+        self._metrics = self.Metrics(self)
+        self._query = self.Query(self)
+        self._io = self.IO(self)
         if validate:
             self.validate()
             self.check_status()
+
+    @property
+    def metrics(self) -> Metrics:
+        """Matrix metrics method getter."""
+        return self._metrics
+
+    @property
+    def io(self) -> IO:
+        """Matrix IO methods getter."""
+        return self._io
+
+    @property
+    def query(self) -> Query:
+        """Matrix query methods getter."""
+        return self._query
+
+    @property
+    def samples(self) -> Sequence[Sample]:
+        """The list of samples in the matrix."""
+        return self._samples
+
+    @property
+    def features(self) -> Sequence[FeatureGroup]:
+        """The list of features in the matrix."""
+        return self._features
 
     def get_n_features(self) -> int:
         """Retrieve the number of feature groups in the data matrix."""
@@ -390,9 +416,10 @@ class DataMatrix:
         """Retrieve the current data matrix status."""
         return self._status
 
-    def list_samples(self) -> list[Sample]:
+    @deprecated("Use the 'samples' property  instead.")
+    def list_samples(self) -> Sequence[Sample]:
         """List all samples in the data matrix."""
-        return self._samples.copy()
+        return self.samples
 
     def list_sample_field(self, field: str) -> list:
         """Retrieve the field value from all samples.
@@ -404,9 +431,10 @@ class DataMatrix:
         """
         return [getattr(x.meta, field, None) for x in self._samples]
 
-    def list_features(self) -> list[FeatureGroup]:
+    @deprecated("Use the `features` property instead.")
+    def list_features(self) -> Sequence[FeatureGroup]:
         """List all features in the data matrix."""
-        return self._features.copy()
+        return self.features
 
     def add_columns(self, *columns: FeatureVector) -> None:
         """Add columns to the data matrix.
@@ -661,9 +689,9 @@ class DataMatrix:
             raise ValueError("At least one matrix is required to perform matrix join.")
         samples = list()
         for m in matrices:
-            samples.extend(m.list_samples())
+            samples.extend(m.samples)
         data = numpy.vstack([m.get_data() for m in matrices])
-        features = matrices[0].list_features()
+        features = matrices[0].features
         return cls(samples, features, data, validate=True)
 
     def create_submatrix(
@@ -673,16 +701,16 @@ class DataMatrix:
     ) -> Self:
         """Create a submatrix using a subset of samples and/or features."""
         if sample_ids is None and feature_groups is None:
-            submatrix_samples = self.list_samples()
-            submatrix_features = self.list_features()
+            submatrix_samples = self.samples
+            submatrix_features = self.features
             data = self.get_data()
         elif sample_ids is None and feature_groups is not None:
-            submatrix_samples = self.list_samples()
+            submatrix_samples = self.samples
             submatrix_features = [self.get_feature(x) for x in feature_groups]
             data = self.get_data(feature_groups=feature_groups)
         elif sample_ids is not None and feature_groups is None:
             submatrix_samples = [self.get_sample(x) for x in sample_ids]
-            submatrix_features = self.list_features()
+            submatrix_features = self.features
             data = self.get_data(sample_ids=sample_ids)
         else:
             assert feature_groups is not None
@@ -748,16 +776,18 @@ def validate_data_matrix(samples: Sequence[Sample], features: Sequence[FeatureGr
     Sample.validate_samples(*samples)
 
 
-def sort_matrix_columns(features: Sequence[FeatureGroup], data: FloatArray) -> tuple[list[FeatureGroup], FloatArray]:
+def sort_matrix_columns(
+    features: Sequence[FeatureGroup], data: FloatArray
+) -> tuple[Sequence[FeatureGroup], FloatArray]:
     """Sort data using feature group label."""
     sorted_index = [k for k, _ in sorted(enumerate(features), key=lambda x: x[1].group)]
-    return [features[x] for x in sorted_index], data[:, sorted_index]
+    return tuple(features[x] for x in sorted_index), data[:, sorted_index]
 
 
-def sort_matrix_rows(samples: Sequence[Sample], data: FloatArray) -> tuple[list[Sample], FloatArray]:
+def sort_matrix_rows(samples: Sequence[Sample], data: FloatArray) -> tuple[Sequence[Sample], FloatArray]:
     """Sort data using sample run order."""
     sorted_index = [k for k, _ in sorted(enumerate(samples), key=lambda x: x[1].meta.order)]
-    return [samples[x] for x in sorted_index], data[sorted_index]
+    return tuple(samples[x] for x in sorted_index), data[sorted_index]
 
 
 class BaseVector(pydantic.BaseModel):

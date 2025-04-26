@@ -109,7 +109,7 @@ class ColumnTransformer(MultiProcessTransformer):
 
     def _apply_operator(self, data: DataMatrix) -> None:
         exclude = set() if self.exclude is None else set(self.exclude)
-        include = [x.group for x in data.list_features() if x.group not in exclude]
+        include = [x.group for x in data.features if x.group not in exclude]
 
         transformed: list[FeatureVector] = list()
         mp_context = get_context(method=self.spawn_context)
@@ -137,7 +137,7 @@ class RowTransformer(MultiProcessTransformer):
 
     def _apply_operator(self, data: DataMatrix) -> None:
         exclude = set() if self.exclude is None else set(self.exclude)
-        include = [x.id for x in data.list_samples() if x.id not in exclude]
+        include = [x.id for x in data.samples if x.id not in exclude]
 
         transformed: list[SampleVector] = list()
         mp_context = get_context(method=self.spawn_context)

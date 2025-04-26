@@ -123,8 +123,7 @@ class FeatureFilter(ColumnFilter):
 
     def _create_remove_list(self, data: DataMatrix) -> list[int]:
         filters = self.model_extra or dict()
-        features = data.list_features()
-        return [x.group for x in features if not x.has_descriptors_in_range(**filters)]
+        return [x.group for x in data.features if not x.has_descriptors_in_range(**filters)]
 
 
 class BlankCorrector(MatrixTransformer):
@@ -184,7 +183,7 @@ class BlankCorrector(MatrixTransformer):
 
         include_samples = list()
         exclude_samples = self.exclude_samples or list()
-        for sample in data.list_samples():
+        for sample in data.samples:
             if sample.id in exclude_samples:
                 continue
             if not self.apply_to_blanks and sample.id in blank_ids:
@@ -194,7 +193,7 @@ class BlankCorrector(MatrixTransformer):
 
         include_features = list()
         exclude_features = self.exclude_features or list()
-        for feature in data.list_features():
+        for feature in data.features:
             if feature.group in exclude_features:
                 continue
             include_features.append(feature.group)
@@ -276,8 +275,7 @@ class MetricsFilter(ColumnFilter):
     def _create_remove_list(self, data: DataMatrix) -> list[int]:
         metric = self.aggregate_metric(data)
         ind = numpy.where((metric < self.lb) | (metric > self.ub))[0]
-        features = data.list_features()
-        return [features[x.item()].group for x in ind]
+        return [data.features[x.item()].group for x in ind]
 
 
 class CVFilter(MetricsFilter):

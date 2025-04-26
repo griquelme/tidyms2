@@ -50,7 +50,7 @@ class DummyRowFilter(RowFilter):
         return DataMatrixProcessStatus()
 
     def _create_remove_list(self, data: DataMatrix) -> list[str]:
-        return [x.id for x in data.list_samples() if x.meta.order > self.max_order]
+        return [x.id for x in data.samples if x.meta.order > self.max_order]
 
     @classmethod
     def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity):
@@ -68,7 +68,7 @@ class DummyColumnFilter(ColumnFilter):
         return DataMatrixProcessStatus()
 
     def _create_remove_list(self, data: DataMatrix) -> list[int]:
-        return [x.group for x in data.list_features() if x.group > self.max_group]
+        return [x.group for x in data.features if x.group > self.max_group]
 
     @classmethod
     def from_defaults(cls, instrument: MSInstrument, separation: SeparationMode, polarity: Polarity):
@@ -131,7 +131,7 @@ def test_matrix_transformer(matrix: DataMatrix):
 
 def test_row_filter(matrix: DataMatrix):
     max_order = 5
-    removed = {x.id for x in matrix.list_samples() if x.meta.order > max_order}
+    removed = {x.id for x in matrix.samples if x.meta.order > max_order}
     op = DummyRowFilter(max_order=max_order)
 
     assert all(matrix.has_sample(x) for x in removed)
@@ -143,7 +143,7 @@ def test_row_filter(matrix: DataMatrix):
 
 def test_row_remove_none_ok(matrix: DataMatrix):
     max_order = 10000
-    all_samples = {x.id for x in matrix.list_samples()}
+    all_samples = {x.id for x in matrix.samples}
     op = DummyRowFilter(max_order=max_order)
 
     assert all(matrix.has_sample(x) for x in all_samples)
@@ -163,8 +163,8 @@ def test_row_filter_remove_all_raises_error(matrix: DataMatrix):
 
 def test_row_filter_with_exclude_list(matrix: DataMatrix):
     max_order = 5
-    exclude = [x.id for x in matrix.list_samples() if x.meta.order > 8]
-    removed = {x.id for x in matrix.list_samples() if x.meta.order > max_order}.difference(exclude)
+    exclude = [x.id for x in matrix.samples if x.meta.order > 8]
+    removed = {x.id for x in matrix.samples if x.meta.order > max_order}.difference(exclude)
     op = DummyRowFilter(max_order=max_order, exclude=exclude)
 
     assert all(matrix.has_sample(x) for x in removed)
@@ -178,7 +178,7 @@ def test_row_filter_with_exclude_list(matrix: DataMatrix):
 
 def test_column_filter(matrix: DataMatrix):
     max_group = 5
-    removed = {x.group for x in matrix.list_features() if x.group > max_group}
+    removed = {x.group for x in matrix.features if x.group > max_group}
     op = DummyColumnFilter(max_group=max_group)
 
     assert all(matrix.has_feature(x) for x in removed)
@@ -190,8 +190,8 @@ def test_column_filter(matrix: DataMatrix):
 
 def test_column_filter_with_exclude_list(matrix: DataMatrix):
     max_group = 5
-    exclude = [x.group for x in matrix.list_features() if x.group > 8]
-    removed = {x.group for x in matrix.list_features() if x.group > max_group}.difference(exclude)
+    exclude = [x.group for x in matrix.features if x.group > 8]
+    removed = {x.group for x in matrix.features if x.group > max_group}.difference(exclude)
     op = DummyColumnFilter(max_group=max_group, exclude=exclude)
 
     assert all(matrix.has_feature(x) for x in removed)
@@ -205,7 +205,7 @@ def test_column_filter_with_exclude_list(matrix: DataMatrix):
 
 def test_column_filter_remove_none_ok(matrix: DataMatrix):
     max_group = 10000
-    all_features = {x.group for x in matrix.list_features()}
+    all_features = {x.group for x in matrix.features}
     op = DummyRowFilter(max_order=max_group)
 
     assert all(matrix.has_feature(x) for x in all_features)
@@ -238,7 +238,7 @@ def test_column_transformer(matrix: DataMatrix, max_workers):
 
 @pytest.mark.parametrize("max_workers", [1, 2])
 def test_column_transformer_with_exclude_list(matrix: DataMatrix, max_workers):
-    exclude_groups = [x.group for x in matrix.list_features() if x.group < 5]
+    exclude_groups = [x.group for x in matrix.features if x.group < 5]
     op = DummyColumnTransformer(max_workers=max_workers, exclude=exclude_groups)
 
     excluded_columns = {x.feature.group: x for x in matrix.get_columns(*exclude_groups)}
@@ -269,7 +269,7 @@ def test_row_transformer(matrix: DataMatrix, max_workers):
 
 @pytest.mark.parametrize("max_workers", [1, 2])
 def test_row_transformer_with_exclude_list(matrix: DataMatrix, max_workers):
-    exclude_ids = [x.id for x in matrix.list_samples() if x.meta.order < 5]
+    exclude_ids = [x.id for x in matrix.samples if x.meta.order < 5]
     op = DummyRowTransformer(max_workers=max_workers, exclude=exclude_ids)
 
     excluded_rows = {x.sample.id: x for x in matrix.get_rows(*exclude_ids)}
