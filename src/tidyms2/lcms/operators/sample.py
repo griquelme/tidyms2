@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import Self, assert_never
 
 import pydantic
-from numpy import zeros_like
+from numpy import minimum, zeros_like
 
 from ...algorithms.raw import MakeRoiParameters, make_roi
 from ...algorithms.signal import detect_peaks, estimate_baseline, estimate_noise, smooth
@@ -15,9 +15,6 @@ from ...core.models import MZTrace, Sample
 from ...core.operators.sample import FeatureExtractor, RoiExtractor, RoiTransformer
 from ...io import MSData
 from ..models import Peak
-
-if TYPE_CHECKING:
-    from typing import assert_never
 
 
 class LCTraceExtractor(RoiExtractor[MZTrace, Peak], MakeRoiParameters):
@@ -110,8 +107,11 @@ class LCTraceBaselineEstimator(RoiTransformer[MZTrace, Peak]):
             roi.spint, min_chunk_size=self.min_slice_size, n_chunks=self.n_slices, robust=self.robust
         )
         if self.smoothing_strength is not None:
-            roi.spint = smooth(roi.spint, self.smoothing_strength)
-        roi.baseline = estimate_baseline(roi.spint, roi.noise, min_proba=self.min_proba)
+            spint = smooth(roi.spint, self.smoothing_strength)
+        else:
+            spint = roi.spint
+
+        roi.baseline = minimum(estimate_baseline(spint, roi.noise, min_proba=self.min_proba), roi.spint)
         return roi
 
     @classmethod
