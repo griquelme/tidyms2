@@ -114,15 +114,15 @@ def _map_ft_meta_field_to_index(fields: list[str], ft_meta_start: int) -> dict[s
 
 def _create_feature_group(row: list[str], field_to_index: dict[str, int], group: int) -> FeatureGroup:
     charge = int(row[field_to_index[PROGENESIS_CHARGE]])
-    ann = GroupAnnotation(label=group, charge=charge)
+    name = row[field_to_index[PROGENESIS_NAME]]  # progenesis internal name
+    ann = GroupAnnotation(label=group, charge=charge, name=name)
 
     descriptors = {
         "mz": float(row[field_to_index[PROGENESIS_MZ]]),
         "rt": float(row[field_to_index[PROGENESIS_RT]]) * 60,  # progenesis express time in min
         "width": float(row[field_to_index[PROGENESIS_WIDTH]]) * 60,
     }
-    name = row[field_to_index[PROGENESIS_NAME]]  # progenesis internal name
-    return FeatureGroup(group=group, annotation=ann, name=name, descriptors=descriptors)
+    return FeatureGroup(group=group, annotation=ann, descriptors=descriptors)
 
 
 def _create_matrix_column(row: list[str], start: int, end: int) -> list[float]:
