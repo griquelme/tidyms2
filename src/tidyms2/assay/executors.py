@@ -29,8 +29,8 @@ class SequentialSampleProcessor(Generic[RoiType, FeatureType]):
     def execute(self, storage: AssayStorage, pipe: Pipeline, *samples: Sample) -> None:
         """Apply a pipeline to a sample."""
         n_samples = len(samples)
-        for k, sample in enumerate(samples):
-            logger.info(f"Processing `{sample.id}` ({k}/{n_samples}).")
+        for k, sample in enumerate(samples, start=1):
+            logger.info(f"Processing sample `{sample.id}` ({k}/{n_samples}).")
             data = OnMemorySampleStorage(sample, storage.get_roi_type(), storage.get_feature_type())
             pipe.apply(data)
             storage.add_sample_data(data)
@@ -53,9 +53,9 @@ class ParallelSampleProcessor(pydantic.BaseModel, Generic[RoiType, FeatureType])
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             n_samples = len(samples)
             futures = [executor.submit(_sample_executor_worker, pipe, data) for pipe, data in iterator()]
-            for k, future in enumerate(concurrent.futures.as_completed(futures)):
+            for k, future in enumerate(concurrent.futures.as_completed(futures), start=1):
                 data = future.result()
-                logger.info(f"Processing `{data.get_sample().id}` ({k}/{n_samples}).")
+                logger.info(f"Processed sample `{data.get_sample().id}` ({k}/{n_samples}).")
                 storage.add_sample_data(data)
 
 

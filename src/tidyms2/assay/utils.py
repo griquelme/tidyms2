@@ -28,9 +28,10 @@ def create_matrix_data(
     X = zeros((n_samples, n_feature_groups), dtype=float64)
 
     for value, ann in zip(descriptor, annotations):
-        row = sample_to_index[ann.sample_id]
-        col = group_to_index[ann.group]
-        X[row, col] = value
+        if ann.group > -1:
+            row = sample_to_index[ann.sample_id]
+            col = group_to_index[ann.group]
+            X[row, col] = value
 
     for sample_id, sample_fills in fill_values.items():
         for group, value in sample_fills.items():
@@ -47,8 +48,8 @@ def create_feature_groups(
     agg: dict[str, Callable] | Callable | None = None,
 ) -> list[FeatureGroup]:
     """Compute feature groups from a feature list."""
-    if len(descriptors) != len(annotations):
-        raise ValueError("The number of feature descriptors and annotations must be the same.")
+    n_ft_descriptors = len(next(iter(descriptors.values())))
+    assert n_ft_descriptors == len(annotations), "incompatible descriptor and annotation length."
 
     if isinstance(agg, dict):
         agg = agg.update({k: nanmean for k in descriptors if k not in agg})
