@@ -10,7 +10,7 @@ from sqlalchemy import Float, Integer, String
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 
 from ...core.dataflow import AssayProcessStatus
-from ...core.models import Annotation, AnnotationPatch, DescriptorPatch, Feature, FillValue, Roi, Sample
+from ...core.models import Annotation, AnnotationPatch, DescriptorPatch, Feature, FeatureGroup, FillValue, Roi, Sample
 
 Base = declarative_base()
 
@@ -256,3 +256,32 @@ class FillValueModel(BaseOrmModel):
     def to_fill_value(self) -> FillValue:
         """Create a fill value pydantic model from the current instance."""
         return FillValue(sample_id=self.sample_id, feature_group=self.feature_group, value=self.value)
+
+
+class FeatureGroupModel(BaseOrmModel):
+    """Store feature group data."""
+
+    __tablename__ = "feature_groups"
+
+    group: Mapped[int] = mapped_column(Integer, primary_key=True)
+    descriptors: Mapped[str] = mapped_column(nullable=False)
+    annotations: Mapped[str] = mapped_column(nullable=False)
+
+    @classmethod
+    def from_feature_group(cls, feature_group: FeatureGroup):
+        """Create a new model from a feature group."""
+        return cls(
+            group=feature_group.group,
+            descriptors=json.dumps(feature_group.descriptors),
+            annotations=feature_group.annotation.model_dump_json(),
+        )
+
+    def to_feature_group(self) -> FeatureGroup:
+        """Convert a model into a feature group."""
+        return FeatureGroup.model_validate(
+            {
+                "group": self.group,
+                "annotation": json.loads(self.annotations),
+                "descriptors": json.loads(self.descriptors),
+            }
+        )
