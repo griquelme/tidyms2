@@ -358,9 +358,6 @@ class FeatureGroup(pydantic.BaseModel):
     descriptors: dict[str, float]
     """Aggregated feature descriptors."""
 
-    name: str | None = None
-    """An optional name for the feature group."""
-
     @pydantic.computed_field(repr=False)
     @cached_property
     def mz(self) -> float:
@@ -439,6 +436,9 @@ class GroupAnnotation(pydantic.BaseModel):
     charge: int | None = pydantic.Field(default=None, repr=False)
     """The numerical charge of the feature. Only defined if an isotopologue annotation algorithm
     was applied to the dataset."""
+
+    name: str | None = None
+    """An optional name for the feature group."""
 
 
 class IsotopicEnvelope(pydantic.BaseModel):
