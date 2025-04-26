@@ -29,6 +29,7 @@ from .models import (
     Base,
     DescriptorModel,
     DescriptorPatchModel,
+    FeatureGroupModel,
     FeatureModel,
     FillValueModel,
     RoiModel,
@@ -77,7 +78,8 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
 
     def add_feature_groups(self, *groups: FeatureGroup) -> None:
         """Add feature groups data to the assay storage."""
-        raise NotImplementedError
+        with create_session(self.session_factory) as session:
+            session.add_all(FeatureGroupModel.from_feature_group(x) for x in groups)
 
     def add_fill_values(self, *fill_values: FillValue) -> None:
         """Add values to fill missing entries in the data matrix."""
@@ -194,7 +196,10 @@ class SQLiteAssayStorage(Generic[FeatureType, RoiType]):
 
     def fetch_feature_groups(self) -> list[FeatureGroup]:
         """Fetch feature groups stored in the assay."""
-        raise NotImplementedError
+        with create_session(self.session_factory) as session:
+            stmt = select(FeatureGroupModel)
+            feature_groups = [x.to_feature_group() for x in session.execute(stmt).scalars()]
+        return feature_groups
 
     def fetch_fill_values(self) -> dict[str, dict[int, float]]:
         """Fetch fill values for data matrix."""

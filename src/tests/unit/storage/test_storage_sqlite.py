@@ -10,7 +10,7 @@ from tidyms2.storage.memory import OnMemorySampleStorage
 from tidyms2.storage.sqlite.assay import LATEST_SNAPSHOT
 
 from .. import helpers
-from ..helpers import ConcreteFeature, ConcreteRoi
+from ..helpers import ConcreteFeature, ConcreteRoi, create_feature_group
 
 
 class AssayStorageFixtures:
@@ -390,7 +390,7 @@ class TestSQLiteAssayStorageDescriptorApi(AssayStorageFixtures):
         assert descriptors_after_patch == annotations_from_snapshot
 
 
-class TestOnMemoryAssayStorageFillValueApi(AssayStorageFixtures):
+class TestSQLliteAssayStorageFillValueApi(AssayStorageFixtures):
     def test_fetch_fill_values_no_values_return_empty_dict(self, assay):
         fill_values = assay.fetch_fill_values()
         assert isinstance(fill_values, dict)
@@ -439,3 +439,19 @@ class TestOnMemoryAssayStorageFillValueApi(AssayStorageFixtures):
         latest_fill_values = assay.fetch_fill_values()
         assert latest_fill_values[val1.sample_id][val1.feature_group] == val1.value
         assert latest_fill_values[val2.sample_id][val2.feature_group] == val2.value
+
+
+class TestSQLliteAssayFeatureGroupApi(AssayStorageFixtures):
+    def test_fetch_no_groups_return_empty_list(self, assay: sqlite.SQLiteAssayStorage):
+        actual = assay.fetch_feature_groups()
+        expected = list()
+        assert actual == expected
+
+    def tests_add_fetch_return_equal_groups(self, assay: sqlite.SQLiteAssayStorage):
+        expected = [create_feature_group(k) for k in range(5)]
+
+        assert not assay.fetch_feature_groups(), "assay must be empty before add"
+        assay.add_feature_groups(*expected)
+        actual = assay.fetch_feature_groups()
+
+        assert sorted(actual, key=lambda x: x.group) == sorted(expected, key=lambda x: x.group)
