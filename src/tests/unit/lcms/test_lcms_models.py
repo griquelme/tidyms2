@@ -97,6 +97,7 @@ class TestPeak:
 
     def test_get_mz_ok(self, peak):
         assert isclose(peak.get("mz"), self.peak_mz)
+        assert isinstance(peak.mz, float)
 
     def test_get_mz_when_intensity_is_equal_to_baseline_returns_nan(self, peak):
         peak.roi.baseline = peak.roi.spint

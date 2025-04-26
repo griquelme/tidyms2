@@ -111,7 +111,7 @@ class Peak(AnnotableFeature[MZTrace]):
     @cached_property
     def extension(self) -> float:
         """The peak extension, defined as the length of the peak region."""
-        return self.roi.time[self.end - 1] - self.roi.time[self.start]
+        return (self.roi.time[self.end - 1] - self.roi.time[self.start]).item()
 
     @pydantic.computed_field(repr=False)
     @cached_property
@@ -124,7 +124,7 @@ class Peak(AnnotableFeature[MZTrace]):
         if self.roi.noise is None or np.allclose(self.roi.noise[self.apex], 0.0):
             return nan
         else:
-            return self.get("height") / self.roi.noise[self.apex]
+            return (self.get("height") / self.roi.noise[self.apex]).item()
 
     @pydantic.computed_field
     @cached_property
@@ -144,7 +144,7 @@ class Peak(AnnotableFeature[MZTrace]):
     @cached_property
     def mz_std(self) -> float:
         """The peak m/z standard deviation."""
-        return self.roi.mz[self.start : self.end].std()
+        return self.roi.mz[self.start : self.end].std().item()
 
     def compare(self, other: Self) -> float:
         """Compute the similarity between a pair of peaks.
