@@ -20,8 +20,8 @@ from uuid import UUID
 import numpy
 import pydantic
 
+from . import exceptions
 from .enums import MSDataMode
-from .exceptions import InvalidFeatureDescriptor
 from .utils.common import create_id
 from .utils.numpy import FloatArray1D, IntArray1D
 
@@ -94,6 +94,17 @@ class Sample(pydantic.BaseModel):
     def serialize_path(self, path: Path, _info) -> str:
         """Serialize path into a string."""
         return str(path)
+
+    @staticmethod
+    def validate_samples(*samples: Sample) -> None:
+        n_samples = len(samples)
+        if len({x.id for x in samples}) < n_samples:
+            msg = "Samples must have a unique id."
+            raise exceptions.RepeatedIdError(msg)
+
+        if len({x.meta.order for x in samples}) < n_samples:
+            msg = "Samples must have a unique order."
+            raise exceptions.RepeatedSampleOrder(msg)
 
 
 class Roi(TidyMSBaseModel):
@@ -365,7 +376,8 @@ class FeatureGroup(pydantic.BaseModel):
         """
         for name, (lower, upper) in filters.items():
             if name not in self.descriptors:
-                raise InvalidFeatureDescriptor(f"Feature group {self.group} does not have descriptor {name}.")
+                msg = f"Feature group {self.group} does not have descriptor {name}."
+                raise exceptions.InvalidFeatureDescriptor(msg)
             if not lower <= self.descriptors[name] <= upper:
                 return False
         return True
