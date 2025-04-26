@@ -14,9 +14,9 @@ from .operators import LCFeatureMatcher, LCPeakExtractor, LCTraceBaselineEstimat
 def create_lcms_assay(
     id: str,
     *,
-    instrument: MSInstrument,
-    separation: SeparationMode,
-    polarity: Polarity,
+    instrument: MSInstrument | str,
+    separation: SeparationMode | str,
+    polarity: Polarity | str,
     annotate_isotopologues: bool = True,
     on_disk: bool = False,
     max_workers: int = 1,
@@ -35,6 +35,15 @@ def create_lcms_assay(
     :param storage_path: path to the DB file to store assay data. Only used if `on_disk` is set to ``True``.
 
     """
+    if isinstance(instrument, str):
+        instrument = MSInstrument(instrument)
+
+    if isinstance(separation, str):
+        separation = SeparationMode(separation)
+
+    if isinstance(polarity, str):
+        polarity = Polarity(polarity)
+
     if on_disk:
         host = storage_path or f"{id}.sqlite"
         storage = SQLiteAssayStorage(id, host, MZTrace, Peak)
@@ -60,5 +69,8 @@ def create_lcms_assay(
         assay.pipes.sample.add_operator(op)
 
     assay.pipes.assay.add_operator(LCFeatureMatcher.from_defaults(instrument, separation, polarity))
+
+    for op in assay.pipes.assay.operators:
+        op.id = f"{assay.id}-{op.__class__.__name__}"
 
     return assay
