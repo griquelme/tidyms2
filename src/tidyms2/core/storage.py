@@ -40,7 +40,7 @@ class SampleStorage(Protocol, Generic[RoiType, FeatureType]):
     roi_type: type[RoiType]
     feature_type: type[FeatureType]
 
-    def __init__(self, sample: Sample, *args, **kwargs) -> None: ...
+    def __init__(self, sample: Sample, roi_type: type[RoiType], feature_type: type[FeatureType], **kwargs) -> None: ...
 
     def add_features(self, *features: FeatureType) -> None:
         """Add features to the sample storage."""

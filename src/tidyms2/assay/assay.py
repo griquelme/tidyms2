@@ -10,7 +10,7 @@ from ..core.matrix import DataMatrix
 from ..core.models import Annotation, FeatureType, RoiType, Sample
 from ..core.operators.assay import AssayOperator, MissingImputer
 from ..core.operators.pipeline import Pipeline
-from ..core.storage import AssayStorage
+from ..core.storage import AssayStorage, SampleStorage
 from .executors import SampleProcessor
 from .utils import create_feature_groups, create_matrix_data
 
@@ -34,12 +34,16 @@ class Assay(Generic[RoiType, FeatureType]):
         self,
         id: str,
         assay_storage: AssayStorage[RoiType, FeatureType],
-        sample_processor: SampleProcessor,
+        sample_processor: SampleProcessor[RoiType, FeatureType],
+        sample_storage_type: type[SampleStorage[RoiType, FeatureType]],
+        sample_storage_config: dict | None = None,
     ):
         self.id = id
         self._sample_queue: OrderedDict[str, Sample] = OrderedDict()
         self._storage = assay_storage
         self._sample_processor = sample_processor
+        self._sample_storage_type = sample_storage_type
+        self._sample_storage_config = sample_storage_config or dict()
         self.pipes = self._PipelineContainer(id)
 
     def add_samples(self, *samples: Sample) -> None:
@@ -162,7 +166,14 @@ class Assay(Generic[RoiType, FeatureType]):
         samples = list()
         for id_ in sample_ids:
             try:
-                samples.append(self._sample_queue[id_])
+                sample = self._sample_queue[id_]
+                sample_storage = self._sample_storage_type(
+                    sample,
+                    self._storage.get_roi_type(),
+                    self._storage.get_feature_type(),
+                    **self._sample_storage_config,
+                )
+                samples.append(sample_storage)
             except KeyError:
                 raise exceptions.SampleNotFound(id_)
 
