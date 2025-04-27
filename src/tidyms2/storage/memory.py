@@ -308,7 +308,7 @@ class OnMemorySampleStorage(Generic[RoiType, FeatureType]):
 
     """
 
-    def __init__(self, sample: Sample, roi_type: type[RoiType], feature_type: type[FeatureType]) -> None:
+    def __init__(self, sample: Sample, roi_type: type[RoiType], feature_type: type[FeatureType], **kwargs) -> None:
         self.roi_type = roi_type
         self.feature_type = feature_type
         self._sample = sample.model_copy()

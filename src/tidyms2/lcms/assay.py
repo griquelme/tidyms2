@@ -5,7 +5,7 @@ from ..assay import Assay
 from ..assay.executors import ParallelSampleProcessor, SequentialSampleProcessor
 from ..core.enums import MSInstrument, Polarity, SeparationMode
 from ..core.models import MZTrace
-from ..storage.memory import OnMemoryAssayStorage
+from ..storage.memory import OnMemoryAssayStorage, OnMemorySampleStorage
 from ..storage.sqlite import SQLiteAssayStorage
 from .models import Peak
 from .operators import LCFeatureMatcher, LCPeakExtractor, LCTraceBaselineEstimator, LCTraceExtractor
@@ -55,7 +55,12 @@ def create_lcms_assay(
     else:
         executor = ParallelSampleProcessor(max_workers=max_workers)
 
-    assay = Assay(id, storage, executor)
+    assay = Assay(
+        id=id,
+        assay_storage=storage,
+        sample_processor=executor,
+        sample_storage_type=OnMemorySampleStorage,
+    )
 
     sample_ops = list()
     sample_ops.append(LCTraceExtractor.from_defaults(instrument, separation, polarity))
