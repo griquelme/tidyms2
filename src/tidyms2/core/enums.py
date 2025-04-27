@@ -19,9 +19,14 @@ class OperatorType(str, enum.Enum):
 class SeparationMode(str, enum.Enum):
     """Analytical method separation platform."""
 
-    DART = "DART"
-    HPLC = "HPLC"
-    UPLC = "UPLC"
+    DART = "dart"
+    """direct analysis in real time ion source"""
+
+    HPLC = "hplc"
+    """High Performance Liquid Chromatography separation"""
+
+    UPLC = "uplc"
+    """ultra performance liquid chromatography separation"""
 
 
 class MSInstrument(enum.Enum):
