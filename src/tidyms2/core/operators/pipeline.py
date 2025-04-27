@@ -20,6 +20,7 @@ class Pipeline:
     def __init__(self, id: str) -> None:
         self.id = id
         self.operators: list[SampleOperator | AssayOperator | Pipeline] = list()
+        self._id_to_operator = dict()
 
     def copy(self) -> Pipeline:
         """Create a copy of the current instance."""
@@ -52,11 +53,28 @@ class Pipeline:
         """
         check_compatible_element(self, operator)
 
-        if any(x.id == operator.id for x in self.operators):
+        if operator.id in self._id_to_operator:
             msg = f"Pipeline {self.id} already contains an operator with id {operator.id}."
             raise RepeatedIdError(msg)
 
         self.operators.append(operator)
+        self._id_to_operator[operator.id] = operator
+
+    def get_operator(self, id: str) -> AssayOperator | SampleOperator | Pipeline:
+        """Get an operator by id.
+
+        :param id: the id of an operator in the pipeline
+        :raises ValueError: if the operator is not found
+
+        """
+        try:
+            return self._id_to_operator[id]
+        except KeyError:
+            raise ValueError(f"Operator with id {id} not found in pipeline `{self.id}`.")
+
+    def list_operator_ids(self) -> list[str]:
+        """Retrieve the name of all operators in the pipeline."""
+        return list(self._id_to_operator)
 
     @overload
     def apply(self, data: SampleStorage[RoiType, FeatureType]) -> None: ...
