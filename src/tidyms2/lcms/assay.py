@@ -65,7 +65,7 @@ def create_lcms_assay(
         sample_ops.append(IsotopologueAnnotator.from_defaults(instrument, separation, polarity))
 
     for op in sample_ops:
-        op.id = f"{assay.id}-{op.__class__.__name__}"
+        op.id = f"{assay.id}__{op.__class__.__name__}"
         assay.pipes.sample.add_operator(op)
 
     assay.pipes.assay.add_operator(LCFeatureMatcher.from_defaults(instrument, separation, polarity))
