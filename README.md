@@ -1,5 +1,4 @@
-TidyMS2
-=======
+# TidyMS2 [![PR](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml)
 
 Tools to process mass spectrometry data.
 
