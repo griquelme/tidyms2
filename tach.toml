@@ -1,46 +1,39 @@
 interfaces = []
-exclude = [
-    "**/*__pycache__",
-    "**/*egg-info",
-    "**/docs",
-    "**/tests",
-    "**/venv",
-]
-source_roots = [ "src/tidyms2",
-]
+exclude = ["**/*__pycache__", "**/*egg-info", "**/docs", "**/tests", "**/venv"]
+source_roots = ["src/tidyms2"]
 
-[[modules ]]
+[[modules]]
 path = "core"
 depends_on = []
 
-[[modules ]]
+[[modules]]
 path = "lcms"
 depends_on = ["storage", "io", "assay", "core", "annotation", "algorithms"]
 
-[[modules ]]
+[[modules]]
 path = "chem"
 depends_on = ["core"]
 
-[[modules ]]
+[[modules]]
 path = "simulation"
 depends_on = ["io", "chem", "core"]
 
-[[modules ]]
+[[modules]]
 path = "annotation"
 depends_on = ["chem", "core"]
 
-[[modules ]]
+[[modules]]
 path = "io"
 depends_on = ["core"]
 
-[[modules ]]
+[[modules]]
 path = "algorithms"
 depends_on = ["io", "core"]
 
-[[modules ]]
+[[modules]]
 path = "assay"
-depends_on = ["annotation", "core", "storage"]
+depends_on = ["annotation", "core"]
 
-[[modules ]]
+[[modules]]
 path = "storage"
 depends_on = ["core"]
