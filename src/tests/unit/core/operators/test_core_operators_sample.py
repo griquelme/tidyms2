@@ -265,3 +265,31 @@ class TestPipeline:
         pipe.apply(sample_storage)
         assert sample_storage.get_n_rois()
         assert sample_storage.get_n_features()
+
+    def test_list_operators(self, pipe):
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(helpers.DummyRoiTransformer(id="op2"))
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+
+        assert pipe.list_operator_ids() == ["op1", "op2", "op3", "op4"]
+
+    def test_fetch_operator(self, pipe):
+        query_op = helpers.DummyRoiTransformer(id="op2")
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(query_op)
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+
+        fetched_op = pipe.get_operator(query_op.id)
+        assert fetched_op == query_op
+
+    def test_fetch_operator_not_found_raises_error(self, pipe):
+        query_op = helpers.DummyRoiTransformer(id="op2")
+        pipe.add_operator(helpers.DummyRoiExtractor(id="op1"))
+        pipe.add_operator(query_op)
+        pipe.add_operator(helpers.DummyFeatureExtractor(id="op3"))
+        pipe.add_operator(helpers.DummyFeatureTransformer(id="op4"))
+
+        with pytest.raises(ValueError):
+            pipe.get_operator("invalid_id")
