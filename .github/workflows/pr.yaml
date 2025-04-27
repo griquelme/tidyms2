@@ -50,3 +50,8 @@ jobs:
         if: ${{ always() }}
         run: |
           uv run pytest src/tests/unit
+
+      - name: check module dependencies
+        if: ${{ always() }}
+        run: |
+          uv run tach check
