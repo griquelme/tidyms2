@@ -144,7 +144,8 @@ class EnvelopeValidator(_EnvelopeGenerator):
         valid_length = 0
         tol = p[0] * self.config.min_M_tol + (1 - p[0]) * self.config.max_M_tol
         self.generate_envelopes(M, p, tol)
-        assert self.results is not None
+        if self.results is None:
+            return 0
         query = self._query
         assert query is not None
         length = len(query.M)
@@ -375,7 +376,7 @@ def _find_result_envelopes(
     pos_env: Envelope,
     neg_env: Envelope,
     c_env: Envelope,
-) -> Envelope:
+) -> Envelope | None:
     length = pos_env.M.shape[1]
     shape = (fg.get_n_results(), length)
     M = np.zeros(shape, dtype=float)
@@ -397,6 +398,8 @@ def _find_result_envelopes(
             start = end
 
     envelopes = Envelope(M=M, p=p)
+    if M.size < 2:
+        return None
     envelopes.crop(M.size)
     return envelopes
 
