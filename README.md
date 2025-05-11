@@ -1,4 +1,4 @@
-# TidyMS2 [![PR](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml)
+# TidyMS2 [![PR](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml) [![publish to pypi](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml)
 
 Tools to process mass spectrometry data.
 
