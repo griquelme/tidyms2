@@ -37,8 +37,5 @@ jobs:
         with:
           name: dist-artifacts
           path: dist/
-      - name: check contents
-        run: |
-          ls dist
-      # - name: publish to pypi
-      #   uses: pypa/gh-action-pypi-publish@release/v1
+      - name: publish to pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
