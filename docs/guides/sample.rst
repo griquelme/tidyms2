@@ -13,27 +13,27 @@ done by using the simulation module:
 
     factory_spec = {
         "config": {
-            "min_signal_intensity": 1.0,
+            "min_int": 1.0,
             "n_scans": 40,
-            "amp_noise": 0.0,
+            "int_std": 0.0,
         },
         "adducts": [
             {
                 "formula": "[C54H104O6]+",
-                "rt_mean": 10.0,
-                "base_intensity": 1000.0,
+                "rt": {"mean": 10.0},
+                "abundance": {"mean": 1000.0},
                 "n_isotopologues": 2,
             },
             {
                 "formula": "[C27H40O2]+",
-                "rt_mean": 20.0,
-                "base_intensity": 2000.0,
+                "rt": {"mean": 20.0},
+                "abundance": {"mean": 2000.0},
                 "n_isotopologues": 2,
             },
             {
                 "formula": "[C24H26O12]+",
-                "rt_mean": 30.0,
-                "base_intensity": 3000.0,
+                "rt": {"mean": 30.0},
+                "abundance": {"mean": 3000.0},
                 "n_isotopologues": 2,
             },
         ],
@@ -97,15 +97,16 @@ transformations.
 High level API
 --------------
 
-The high level API uses is based on the TidyMS data model. The general idea is that sample transformations
-are defined in a data pipeline, comprised by multiple operators that are applied one at a time to the
-sample data. We'll illustrate data processing using individual operators first, and then we show how to
-apply multiple operators using a pipeline. It is highly recommended to read the:ref:`architecture overview
-guide <overview>` as it presents a high level yet complete view of sample data processing using pipelines
-and operators.
+The high level API is based on the TidyMS data model. The general idea is that sample
+transformations are defined in a data pipeline, which is comprised by a sequence of
+operators. Operators are applied one at a time to sample data. We will illustrate
+data processing using individual operators first, and then we show how to apply
+multiple operators using a pipeline.
 
-The first thing to do to process sample data through a pipeline is to create a sample data storage. We will
-use the :py:class`tidyms.storage.OnMemorySampleStorage` class for this:
+The first thing to do to process sample data through a pipeline is to create a sample
+data storage. The sample storage is a container class that store ROIs and features
+extracted from raw data. We will use the :py:class:`~tidyms2.storage.OnMemorySampleStorage`
+class for this:
 
 .. code-block:: python
 
@@ -114,13 +115,38 @@ use the :py:class`tidyms.storage.OnMemorySampleStorage` class for this:
 
     sample_data = OnMemorySampleStorage(sample, MZTrace, Peak)
 
-Note that, besides the sample model, we also need to pass the type of data that we want to store. Sample data
-into two entities that are part of the TidyMS data model: ROI and features. A ROI is a data subset extracted from
-raw data where features may be extracted from. A feature is a ROI subregion that contains information associated
-with a chemical species. The sample data storage classes manage ROI/feature storage and retrieval extracted from
-raw data. For LC-MS data, the :py:class:`~tidyms2.lcms.MZTrace` models a ROI for LC-MS data and it is basically
-an m/z trace containing m/z and intensity values on each scan. The :py:class:`~tidyms2.lcms.Peak` models a
-chromatographic peak detected in an m/z trace. We will use the LC-MS sample operators
-:py:class:`~tidyms2.lcms.LCTraceExtractor` and :py:class:`~tidyms2.lcms.LCPeakExtractor` first to extract m/z traces
-from raw data and then detect peaks on each m/z trace:
+Note that, besides the sample model, we also need to pass the type of data that we
+want to store (MZTrace and Peak). During sample processing sample data is stored
+either as ROI or features, two core entities of the TidyMS data model. A ROI is a
+data subset extracted from raw data. A feature is a ROI subregion that contains
+information associated with a chemical species. The sample data storage class manage
+ROI/feature storage and retrieval extracted from raw data. For LC-MS data, ROI is
+modeled as a the :py:class:`~tidyms2.core.models.MZTrace`, which is basically an m/z trace
+containing m/z and intensity values from each scan. :py:class:`~tidyms2.lcms.Peak`
+models a chromatographic peak detected in an m/z trace. We will use the LC-MS sample
+operators :py:class:`~tidyms2.lcms.LCTraceExtractor` and
+:py:class:`~tidyms2.lcms.LCPeakExtractor` to extract m/z traces from raw data
+and then detect peaks on each m/z trace. This code snippet applies both operators to a
+sample and then plots one of the detected peaks:
 
+..  plot:: plots/single_sample_processing.py
+    :include-source: true
+    :caption: Simulated MS spectrum in profile mode.
+
+Instead of applying operators one by one, multiple operators can be chained together
+in a pipeline:
+
+.. code-block:: python
+
+  from tidyms2.core.operators.pipeline import Pipeline
+  from tidyms2.lcms.operators.sample import LCTraceExtractor, LCTraceBaselineEstimator, LCPeakExtractor
+
+  pipe = Pipeline("example_pipeline")
+  pipe.add_operator(LCTraceExtractor(id="trace_extractor"))
+  pipe.add_operator(LCTraceBaselineEstimator(id="baseline_estimator"))
+  pipe.add_operator(LCPeakExtractor(id="peak_extractor"))
+
+  pipe.apply(sample_data)
+
+This is the approach used in multiple sample processing: a pipeline is designed for
+processing samples and then it is applied to multiple samples.

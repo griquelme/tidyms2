@@ -37,6 +37,7 @@ is recommended to read them in the order listed below:
    guides/raw-data
    guides/chemistry
    guides/sample
+   guides/operators
    guides/assay
    guides/lcms
    guides/simulation
