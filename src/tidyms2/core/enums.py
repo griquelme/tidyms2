@@ -33,7 +33,10 @@ class MSInstrument(enum.Enum):
     """Available MS instrument types."""
 
     QTOF = "qtof"
+    """Quadrupole Time-of-Flight analyzer"""
+
     ORBITRAP = "orbitrap"
+    """Orbitrap analizer"""
 
 
 class Polarity(str, enum.Enum):
