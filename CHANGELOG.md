@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/griquelme/tidyms2/compare/v0.1.0...v0.2.0) (2025-08-30)
+
+
+### Features
+
+* add simulation utility to create list of samples ([01c7662](https://github.com/griquelme/tidyms2/commit/01c7662b34adaca869c743e75fae2a214199a19b))
+
+
+### Bug Fixes
+
+* ensure that submatrix has same status as parent matrix ([6cdf0e0](https://github.com/griquelme/tidyms2/commit/6cdf0e0665f8cd312a7b550b3bdcab2968e00b4c))
+* expose matrix status as a property ([6df9263](https://github.com/griquelme/tidyms2/commit/6df9263478645afb0e5cf4544920f64c2e7ad978))
+* fix type annotation ([8f3e160](https://github.com/griquelme/tidyms2/commit/8f3e1602595bffa55e39d121069cab7a3d41ff6d))
+
 ## 0.1.0 (2025-05-10)
 
 
