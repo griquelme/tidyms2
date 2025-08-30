@@ -367,17 +367,23 @@ class DataMatrix:
         features: Sequence[FeatureGroup],
         data: FloatArray,
         validate: bool = True,
+        status: DataMatrixProcessStatus | None = None,
     ):
         self._data = data
         self._samples = tuple(x for x in samples)
         self._features = tuple(x for x in features)
-        self._status = DataMatrixProcessStatus()
+        self._status = status or DataMatrixProcessStatus()
         self._metrics = self.Metrics(self)
         self._query = self.Query(self)
         self._io = self.IO(self)
         if validate:
             self.validate()
             self.check_status()
+
+    @property
+    def status(self) -> DataMatrixProcessStatus:
+        """Data matrix status getter."""
+        return self._status
 
     @property
     def metrics(self) -> Metrics:
