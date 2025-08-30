@@ -472,6 +472,22 @@ class TestDataMatrix:
         assert actual.features == matrix.features
         assert numpy.array_equal(actual.get_data(), matrix.get_data(sample_ids=sample_ids))
 
+    def test_create_submatrix_has_same_status(self, matrix: DataMatrix):
+        matrix.check_status()
+        assert matrix.status.missing_imputed
+        all_samples = matrix.samples
+        sample_ids = [all_samples[1].id, all_samples[5].id, all_samples[7].id]
+        actual = matrix.create_submatrix(sample_ids=sample_ids)
+
+        sub_matrix_samples = actual.samples
+        assert len(sub_matrix_samples) == len(sample_ids)
+        assert all(actual.has_sample(x) for x in sample_ids)
+        assert actual.status.missing_imputed
+        assert actual.status == matrix.status
+
+        assert actual.features == matrix.features
+        assert numpy.array_equal(actual.get_data(), matrix.get_data(sample_ids=sample_ids))
+
     def test_create_submatrix_with_feature_groups(self, matrix: DataMatrix):
         all_features = matrix.features
         feature_groups = [all_features[1].group, all_features[5].group, all_features[11].group]

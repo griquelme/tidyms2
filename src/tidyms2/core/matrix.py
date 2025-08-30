@@ -725,7 +725,13 @@ class DataMatrix:
             submatrix_features = [self.get_feature(x) for x in feature_groups]
             data = self.get_data(feature_groups=feature_groups, sample_ids=sample_ids)
 
-        return self.__class__(submatrix_samples, submatrix_features, data, validate=False)
+        return self.__class__(
+            submatrix_samples,
+            submatrix_features,
+            data,
+            validate=False,
+            status=self._status.model_copy(),
+        )
 
     @cache
     def _sample_index(self) -> dict[str, int]:
