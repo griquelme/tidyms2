@@ -389,7 +389,7 @@ class AnnotableFeature(Feature[RoiType], ABC):
     """
 
     @abstractmethod
-    def compare(self, other: Self) -> float:
+    def compare(self, other) -> float:
         """Compare the similarity between two features.
 
         Must be a symmetric function that returns a number between 0.0 and 1.0.
