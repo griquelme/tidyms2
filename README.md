@@ -1,4 +1,4 @@
-# TidyMS2 [![PR](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml) [![publish to pypi](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml)
+# TidyMS2 [![PR](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/pr.yaml) [![publish to pypi](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml/badge.svg)](https://github.com/griquelme/tidyms2/actions/workflows/publish.yaml) ![READ THE DOCS](https://app.readthedocs.org/projects/tidyms2/badge/?version=latest)
 
 Tools to process mass spectrometry data.
 
@@ -38,7 +38,7 @@ pip install tidyms2
 Documentation
 -------------
 
-The library documentation is available [here](https://tidyms.readthedocs.io/en/latest/).
+The library documentation is available [here](https://tidyms2.readthedocs.io/en/latest/).
 
 Getting help
 ------------
