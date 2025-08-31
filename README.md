@@ -64,6 +64,13 @@ When reporting an issue, it's helpful to include the following details:
 
 For guidelines on how to write an issue report, refer to this [post](https://matthewrocklin.com/minimal-bug-reports).
 
+Plugins
+-------
+
+You can find here extensions for TidyMS2:
+
+- batch corrector: https://github.com/griquelme/tidyms2-batch-corrector
+
 
 Contributing
 ------------
