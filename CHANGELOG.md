@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/griquelme/tidyms2/compare/v0.2.1...v0.2.2) (2025-08-31)
+
+
+### Documentation
+
+* add plugin section to README ([729169e](https://github.com/griquelme/tidyms2/commit/729169ea10d7c8d53a767a8cc87019eb389796e1))
+* add read the docs integration ([c40e91a](https://github.com/griquelme/tidyms2/commit/c40e91ad5c33884d9dc7bcdc85c5ba633e77535b))
+
 ## [0.2.1](https://github.com/griquelme/tidyms2/compare/v0.2.0...v0.2.1) (2025-08-31)
 
 
