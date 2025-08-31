@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/griquelme/tidyms2/compare/v0.2.0...v0.2.1) (2025-08-31)
+
+
+### Bug Fixes
+
+* access pydantic model_fields using the model class ([6fd9ede](https://github.com/griquelme/tidyms2/commit/6fd9ede2f69bfdfa8310971b49bec1f23ca1db4a))
+* add matrix operators to pipelines ([6b3eb1a](https://github.com/griquelme/tidyms2/commit/6b3eb1a487793dfb766a0bc72d853102efbe51bb))
+
 ## [0.2.0](https://github.com/griquelme/tidyms2/compare/v0.1.0...v0.2.0) (2025-08-30)
 
 
