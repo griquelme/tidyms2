@@ -106,7 +106,7 @@ def check_process_status(actual: ProcessType, reference: ProcessType) -> None:
     :raises ProcessStatusError: if actual status is not compatible with the reference status
 
     """
-    for field in reference.model_fields:
+    for field in reference.__class__.model_fields:
         if field == "type" or field == "extra":
             continue
 
@@ -127,7 +127,7 @@ def update_process_status(actual: ProcessType, reference: ProcessType) -> None:
     :param reference: The status used as a reference
 
     """
-    for field in reference.model_fields:
+    for field in reference.__class__.model_fields:
         if field == "type" or field == "extra":
             continue
         value = getattr(actual, field) or getattr(reference, field)
