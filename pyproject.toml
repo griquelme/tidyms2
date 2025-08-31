@@ -1,6 +1,6 @@
 [project]
 name = "tidyms2"
-version = "0.2.1"
+version = "0.2.2"
 authors = [{ name = "Gabriel Riquelme", email = "griquelme.chm@gmail.com" }]
 description = "Tools to process mass spectrometry data."
 readme = "README.md"
