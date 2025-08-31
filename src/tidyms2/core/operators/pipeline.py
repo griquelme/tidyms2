@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from typing import Any, overload
 
-from ..dataflow import AssayProcessStatus, SampleProcessStatus
+from ..dataflow import AssayProcessStatus, DataMatrixProcessStatus, SampleProcessStatus
 from ..exceptions import PipelineConfigurationError, ProcessStatusError, RepeatedIdError
+from ..matrix import DataMatrix
 from ..models import FeatureType, RoiType
 from ..registry import operator_registry
 from ..storage import AssayStorage, SampleStorage
 from .assay import AssayOperator
 from .base import BaseOperator
+from .matrix import MatrixOperator
 from .sample import SampleOperator
 
 
@@ -19,7 +21,7 @@ class Pipeline:
 
     def __init__(self, id: str) -> None:
         self.id = id
-        self.operators: list[SampleOperator | AssayOperator | Pipeline] = list()
+        self.operators: list[SampleOperator | AssayOperator | MatrixOperator | Pipeline] = list()
         self._id_to_operator = dict()
 
     def copy(self) -> Pipeline:
@@ -34,6 +36,9 @@ class Pipeline:
         equal_ids = self.id == other.id
         equal_operators = self.operators == other.operators
         return equal_ids and equal_operators
+
+    @overload
+    def add_operator(self, operator: MatrixOperator) -> None: ...
 
     @overload
     def add_operator(self, operator: AssayOperator) -> None: ...
@@ -81,6 +86,9 @@ class Pipeline:
 
     @overload
     def apply(self, data: AssayStorage[RoiType, FeatureType]) -> None: ...
+
+    @overload
+    def apply(self, data: DataMatrix) -> None: ...
 
     def apply(self, data) -> None:
         """Apply pipeline to the data."""
@@ -155,17 +163,23 @@ def get_initial_process_status(operator: SampleOperator) -> SampleProcessStatus:
 def get_initial_process_status(operator: AssayOperator) -> AssayProcessStatus: ...
 
 
+@overload
+def get_initial_process_status(operator: MatrixOperator) -> AssayProcessStatus: ...
+
+
 def get_initial_process_status(operator):
     """Create an initial data process status."""
     if isinstance(operator, SampleOperator):
         return SampleProcessStatus()
     elif isinstance(operator, AssayOperator):
         return AssayProcessStatus()
+    elif isinstance(operator, MatrixOperator):
+        return DataMatrixProcessStatus()
     else:
         raise NotImplementedError
 
 
-OT = SampleOperator | AssayOperator
+OT = SampleOperator | AssayOperator | MatrixOperator
 PipelineElement = OT | Pipeline
 
 
@@ -181,7 +195,8 @@ def check_compatible_element(pipeline: Pipeline, element: PipelineElement) -> No
 
     both_sample_operators = isinstance(pipeline_first, SampleOperator) and isinstance(element_first, SampleOperator)
     both_assay_operators = isinstance(pipeline_first, AssayOperator) and isinstance(element_first, AssayOperator)
-    if not both_sample_operators or both_assay_operators:
+    both_matrix_operators = isinstance(pipeline_first, MatrixOperator) and isinstance(element_first, MatrixOperator)
+    if not (both_sample_operators or both_assay_operators or both_matrix_operators):
         msg = "All pipeline elements must process the same data type (sample, assay or matrix)."
         raise PipelineConfigurationError(msg)
 
