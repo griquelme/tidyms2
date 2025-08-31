@@ -199,7 +199,7 @@ class Feature(TidyMSBaseModel, Generic[RoiType]):
         recommended to use the `functools.cached_property` decorator to cache the descriptor value.
         As an example:
 
-        .. code-block: python
+        .. code-block:: python
 
             from functools import cached_property
             from pydantic import computed_field

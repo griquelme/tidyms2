@@ -6,10 +6,12 @@ from numpy import allclose, nan
 from pydantic import ValidationError
 
 from tidyms2 import operators
-from tidyms2.core.enums import AggregationMethod
+from tidyms2.core.enums import AggregationMethod, SampleType
 from tidyms2.core.exceptions import EmptyDataMatrix, ProcessStatusError
 from tidyms2.core.models import Sample
+from tidyms2.core.operators.pipeline import Pipeline
 from tidyms2.simulation.lcms import SimulatedLCMSAdductSpec, simulate_data_matrix
+from tidyms2.simulation.utils import create_sample_list
 
 
 class TestBlankCorrector:
@@ -509,3 +511,45 @@ class TestCorrelationFilter:
 
         assert data.has_feature(0)
         assert not data.has_feature(1)
+
+
+def test_matrix_processing_pipeline():
+    sample_types = [
+        SampleType.BLANK,
+        SampleType.TECHNICAL_QC,
+        SampleType.SAMPLE,
+        SampleType.SAMPLE,
+        SampleType.TECHNICAL_QC,
+    ]
+
+    samples = create_sample_list(sample_types)
+    adducts = [
+        SimulatedLCMSAdductSpec.model_validate(
+            {
+                "formula": "[C54H104O6]+",
+                "abundance": {
+                    "blank": {"mean": 200.0},
+                    "sample": {"mean": 100.0, "prevalence": 1.0},
+                    "qc": {"mean": 1000.0, "prevalence": 1.0},
+                },
+            },
+        ),
+        SimulatedLCMSAdductSpec.model_validate(
+            {
+                "formula": "[C27H40O2]+",
+                "abundance": {
+                    "blank": {"mean": 10.0},
+                    "sample": {"mean": 1000.0, "prevalence": 1.0},
+                    "qc": {"mean": 1000.0, "prevalence": 1.0},
+                },
+            }
+        ),
+    ]
+    matrix = simulate_data_matrix(adducts, samples)
+    pipe = Pipeline("matrix-pipe")
+    pipe.add_operator(operators.BlankCorrector(id="blank-corrector"))
+    pipe.add_operator(operators.DetectionRateFilter(group_by=["group"], threshold=10.0))
+    pipe.apply(matrix)
+    # first feature is always set to zero after blank correction,
+    # so it should be removed by the detection rate filter
+    assert matrix.get_n_features() == 1
