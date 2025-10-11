@@ -5,7 +5,7 @@ User guide
 
 TidyMS2 is an MS data processing library that was created with two goals in mind:
 
-1. provide an easy two use toolkit for processing MS data, allowing users to quickly create data pipelines for
+1. provide an easy to use toolkit for processing MS data, allowing users to quickly create data pipelines for
    entire datasets.
 2. provide an extensible framework for implementing new data processing tools, such as processing workflows or
    algorithms.

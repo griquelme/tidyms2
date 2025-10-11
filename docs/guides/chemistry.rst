@@ -3,9 +3,9 @@
 Working with chemical data
 ==========================
 
-The `chem` package provide utilities to work with chemical data such as isotopes, elements and
-formulas. It also allows to generate formulas from exact mass, score isotopic envelopes and search
-isotopic envelope candidates from a list of m/z values.
+The `chem` package provides utilities to work with chemical data such as isotopes, elements and
+formulas. It also allows to generate formulas from exact mass, score isotopic envelopes, and search
+for isotopic envelope candidates from a list of m/z values.
 
 Elements and isotopes
 ---------------------
@@ -60,7 +60,7 @@ The :class:`~tidyms2.chem.Formula` class allows to create chemical formulas:
     print(water)
     # H2O
 
-Formula objects can be used to compute a formula mass and its isotopic envelope:
+Formula objects can be used to compute the formula mass and its isotopic envelope:
 
 .. code-block:: python
 
@@ -72,10 +72,9 @@ Formula objects can be used to compute a formula mass and its isotopic envelope:
     print(envelope.p)
     # [9.97340572e-01, 6.09327319e-04, 2.04962911e-03, 4.71450803e-07]
 
-Formulas can be created by passing a dictionary of element or isotopes to a formula coefficient
-and the numerical charge of the formula. Formulas are implemented as dictionaries of isotopes
-to formula coefficients, so if an element is passed, it is assumed that it is the most abundant
-isotope.
+Formulas can be created by passing a dictionary of elements or isotopes to formula coefficients
+and the numerical charge of the formula. When an element is passed, the most abundant isotope
+is used by default.
 
 .. code-block:: python
 
@@ -114,7 +113,7 @@ minimum and maximum allowed formula coefficients:
     formula_generator = FormulaGenerator(config)
 
 To generate formulas, an exact mass value must be passed, along with a tolerance to find compatible
-formulas. In the following code example, first a exact mass value is computed from a formula and
+formulas. In the following code example, first an exact mass value is computed from a formula and
 then compatible formulas are generated:
 
 .. code-block:: python
@@ -137,11 +136,11 @@ then compatible formulas are generated:
     #   Isotope(z=8, a=16, symbol='O')
     # ]
 
-`coefficients` is a 2D Numpy array where each row are matching formulas coefficients. The isotope associated
+`coefficients` is a 2D Numpy array where each row contains matching formula coefficients. The isotopes associated
 with each coefficient column are stored in `isotopes`. Finally, a third Numpy array stores the exact mass of
 each matching formula.
 
-The :py:func:`~tidyms2.chem.FormulaGeneratorConfiguration.from_chnops` provides an simple way to create
+The :py:func:`~tidyms2.chem.FormulaGeneratorConfiguration.from_chnops` provides a simple way to create
 pre-configured formula generators:
 
 .. code-block:: python
@@ -150,9 +149,9 @@ pre-configured formula generators:
     formula_generator = FormulaGenerator(config)
 
 
-this method generates a formula space for the CHNOPS elements by finding the maximum formula coefficients of
+This method generates a formula space for the CHNOPS elements by finding the maximum formula coefficients of
 molecules in the `Human Metabolome DataBase <https://hmdb.ca>`_. Precomputed formula bounds are available
-for molecules with maximum mass values of 500, 1000, 1500 and 2000. Other element can be added using the
+for molecules with maximum mass values of 500, 1000, 1500 and 2000. Other elements can be added using the
 :py:func:`~tidyms2.chem.FormulaGeneratorConfiguration.update_bounds` method:
 
 .. code-block:: python
@@ -171,7 +170,7 @@ Scoring measured envelopes against theoretical values is a common strategy to es
 candidate for an unknown compound. The :class:`~tidyms2.chem.EnvelopeScorer` ranks compatible
 formulas based on the similarity with the measured envelope. As the envelope scorer uses a formula
 generator to generate compatible formulas, we need to provide the formula bounds. In the same
-way as the formula generator, the :py:func:`tidyms2.chem.EnvelopeScorerConfiguration.from_hmdb` provides
+way as the formula generator, the :py:func:`~tidyms2.chem.EnvelopeScorerConfiguration.from_chnops` provides
 an easy way to create a configuration:
 
 .. code-block:: python

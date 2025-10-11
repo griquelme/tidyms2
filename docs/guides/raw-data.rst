@@ -44,7 +44,7 @@ a container for m/z and spectral intensity in a single data scan.
 
     print(spectrum.mz[:10])
 
-MSData acts also as an spectra iterator, allowing to get all data from a file:
+MSData also acts as an spectra iterator, allowing to get all data from a file:
 
 .. code-block:: python
 
@@ -70,15 +70,26 @@ The following code snippet reads data defined using a sample model:
 
 
 The MSData reads data in a lazy manner, i.e., only the required scans are loaded into memory. In the default
-configuration, once read, data is cached in to memory for faster retrieval. The MSData cache size can be configured
-to limit the amount of memory used:
+configuration, once read, data is cached into memory for faster retrieval. The MSData cache size can be configured
+to limit memory usage:
 
 .. code-block:: python
 
     filename = "NZ_20200227_039.mzML"
     data = MSData(data_dir / filename, cache= 50 * 1024**2)   # maximum cache size of 50 MiB
 
-Finally, a centroider function may be plugged into an MSData instance to convert profile data to centroid mode as it is
-fetched from disk:
+Finally, a centroider function may be used to convert profile data to centroid mode on the fly.
+The centroider function converts data as is read from disk and stores the converted data in an
+internal cache. To improve performance and avoid repeated computation of centroided data it is
+recommended to set the cache size to ``-1``. The following example shows how the
+:py:class:`~tidyms2.algorithms.centroiders.PeakPickingCentroider` can be used:
 
-TODO: complete
+.. code-block:: python
+
+    from tidyms2.algorithms.centroiders import PeakPickingCentroider
+    from tidyms2.io import MSData
+
+    centroider = PeakPickingCentroider()
+    sample = Sample(path="profile-data.mzML", id="example", ms_data_mode=MSDataMode.PROFILE)
+    ms_data = MSData(sample, centroider=centroider, cache=-1)
+    spectrum = ms_data.get_spectrum(0)
