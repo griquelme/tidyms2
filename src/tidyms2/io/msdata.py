@@ -40,6 +40,8 @@ class MSData:
         instance, this parameter is ignored and is fetched from the sample data.
     :param kwargs: keyword arguments passed to the reader.
 
+    .. seealso:: :py:class:`tidyms2.algorithms.centroiders.PeakPickingCentroider`
+
     """
 
     def __init__(
@@ -103,9 +105,10 @@ class MSData:
             spectrum = self._cache.get(index)
         else:
             spectrum = self._reader.get_spectrum(index)
+            spectrum.centroid = self.sample.ms_data_mode is MSDataMode.CENTROID
             if self.sample.ms_data_mode is MSDataMode.PROFILE and self.centroider is not None:
                 spectrum = self.centroider(spectrum)
-            spectrum.centroid = self.sample.ms_data_mode is MSDataMode.CENTROID
+                spectrum.centroid = True
             self._cache.add(spectrum)
         return spectrum
 
